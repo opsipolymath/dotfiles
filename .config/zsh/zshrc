@@ -1,0 +1,28 @@
+# $ZDOTDIR/zshrc
+#
+# Main rc file for zsh shells
+# Loaded only for interactive shells
+
+# Sort numbers properly
+setopt numeric_glob_sort
+# Report errors if glob doesn't match anything
+setopt nomatch
+# Don't wait for a prompt update to notify of job status changes
+setopt notify
+# Don't beep at me
+unsetopt beep
+
+# Use vim inset mode by default with shorter timeout for mode changes
+bindkey -v
+export KEYTIMEOUT=10
+
+# Set tab size
+tabs -4
+
+# Load custom modules
+__zmodules=( "${ZDOTDIR}"/zmodules-enabled/*.zsh(N) )
+for __zmodule in "${__zmodules[@]}"; do
+	source "${__zmodule}"
+	unset __zmodule
+done
+unset __zmodules

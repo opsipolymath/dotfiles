@@ -1,0 +1,7 @@
+# ${ZDOTDIR}/zprofile
+#
+# Profile file for zsh shells
+# Read only for login shells
+
+# Nothing set here currently
+:

@@ -1,0 +1,34 @@
+# ${XDG_CONFIG_HOME}/alacritty/alacritty.yml
+#
+# General configuration file for alacritty
+
+import:
+  - ~/.config/alacritty/nord.yml
+  - ~/.config/alacritty/keybinds.yml
+
+live_config_reload: true
+draw_bold_text_with_bright_colors: true
+
+window:
+  dynamic_title: true
+
+scrolling:
+  history: 10000
+  multiplier: 3
+
+font:
+  normal:
+    family: JetBrains Mono
+  size: 8.0
+
+cursor:
+  style:
+    shape: Block
+    blinking: Off
+  unfocused_hollow: true
+
+bell:
+  animation: Linear
+  duration: 400
+  color: '#5E81AC'
+  command: None

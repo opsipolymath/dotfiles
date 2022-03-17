@@ -1,0 +1,18 @@
+# ${XDG_CONFIG_HOME}/ncmpcpp/bindings
+#
+# Simple vim-like key bindings for ncmpcpp
+
+def_key "h"
+	previous_column
+def_key "l"
+	next_column
+def_key "j"
+	scroll_down
+def_key "k"
+	scroll_up
+def_key "ctrl-u"
+	page_up
+def_key "ctrl-d"
+	page_down
+def_key "alt-l"
+	show_lyrics

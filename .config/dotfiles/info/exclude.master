@@ -1,0 +1,98 @@
+# ${XDG_CONFIG_HOME}/dotfiles/info/exclude.master
+#
+# Master git exclusions for dotfiles repo.
+
+# Exclude everything by default and all backup files
+/*
+
+# Track configuration directory
+!.config
+
+# Ignore any unwanted loose files
+.config/QtProject.conf
+
+# Ignore specific configuration directories
+.config/BraveSoftware/
+.config/MusicBrainz/
+.config/PulseEffects/
+.config/VirtualBox/
+.config/Yubico
+.config/aurutils/
+.config/cef_user_data/
+.config/chromium/
+.config/dconf/
+.config/freerdp/
+.config/google-chrome/
+.config/gtk-*/
+.config/inkscape/
+.config/midori/
+.config/paradox-launcher*/
+.config/pipewire/
+.config/pulse/
+.config/qutebrowser/
+.config/spotify*/
+.config/ssh/
+.config/systemd/user/default.target.wants/
+.config/tor/
+.config/unity3d/
+
+# Code - Ignore everything except settigs
+.config/Code - OSS/*
+!.config/Code - OSS/User/
+.config/Code - OSS/User/*
+!.config/Code - OSS/User/settings.json
+
+# cmus - Ignore everything except config
+.config/cmus/*
+!.config/cmus/rc
+
+# mopidy - Don't track config with secrets added
+.config/mopidy/mopidy.conf
+
+# Ignore specific files in tracked directories
+.config/dwarftherapist/
+.config/libreoffice/
+.config/ncmpcpp/error.log
+.config/nvim/.netrwhist
+.config/nvim/autoload/
+.config/nvim/plugged/
+.config/nvim/templates/
+.config/tmux/plugins/
+.config/tmux/resurrect/
+.config/vlc/
+.config/zsh/.histfile
+.config/zsh/.zcompdump
+.config/zsh/zmodules-enabled/
+
+# Track dotfiles master exclusion file only
+.config/dotfiles/*
+!.config/dotfiles/info
+.config/dotfiles/info/*
+!.config/dotfiles/info/exclude.master
+
+# Track local directory
+!.local
+
+# Ignore any loose files but not directories
+.local/*
+!.local/*/
+
+# Ignore specific local directories
+.local/lib/
+
+# Allow local share but not any files or directories
+!.local/share/
+.local/share/*
+
+# Track gnupg configuration
+!.local/share/gnupg
+.local/share/gnupg/*
+!.local/share/gnupg/gpg.conf
+!.local/share/gnupg/gpg-agent.conf
+
+# Track custom icons
+!.local/share/icons
+.local/share/icons/*/
+!.local/share/icons/dunst/
+
+# vim: set ft=cfg:
