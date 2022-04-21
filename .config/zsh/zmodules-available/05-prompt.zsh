@@ -23,7 +23,8 @@ set_prompt () {
 	fi
 
 	# Change root's displayed name based on host (just for fun)
-	case "$(hostname)" in
+	__hname="$(hostname)"
+	case "${__hname}" in
 		folkvangr) __rname="freyja" ;;
 		valhalla)  __rname="odin"   ;;
 		niflheim)  __rname="hel"    ;;
@@ -86,7 +87,7 @@ set_prompt () {
 	fi
 
 	# Display root in red, regular user in green
-	__user="%(#.${__error}${__rname}.${__info}%n)@%m"
+	__user="%(#.${__error}${__rname}.${__info}%n)@${__hname:l}"
 
 	# Define the prompt
 	__top="${__norm}┌[${__pwd}${__norm}]${__git_status}"
@@ -102,7 +103,7 @@ set_prompt () {
 
 	# Unset unneeded varaibles
 	unset __norm __info __error
-	unset __rname __pwd __user __git_status __top __bottom
+	unset __hname __rname __pwd __user __git_status __top __bottom
 
 	# Set cursor to a block in vi mode, underline otherwise
 	echo -ne '\e[4 q'
