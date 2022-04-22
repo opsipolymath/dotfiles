@@ -89,7 +89,6 @@ xss-lock -- betterlockscreen -l -- \
 	 --greeter-text "Locked by ${USER^}." \
 	 --verif-text "" &
 feh --no-fehbg --bg-fill --randomize "${WALLPAPER_DIR}"/**
-echo "${WALLPAPER_DIR}" > ~/wallpaper.txt
 
 # Define initial layouts
 for d in $(bspc query -D --names); do
