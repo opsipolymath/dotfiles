@@ -5,7 +5,7 @@
 # Various tmux helper functions
 
 # If not in a TMUX instance, treat CTRL-D as normal
-bindkey "^D" exit
+bindkey "^D" .backward-kill-line
 
 # Prevent tmux from closing with last pane
 if [ -n "$TMUX" ]; then
