@@ -34,7 +34,7 @@ call plug#end()
 
 " -- Plugin Settings {{{
 " nord-vim
-let g:nord_uniform_status_lines = 1
+" let g:nord_uniform_status_lines = 1
 
 " lightline
 let g:lightline = {
@@ -42,7 +42,8 @@ let g:lightline = {
 	\ 'active': {
 	\     'right': [ [ 'lineinfo'], ['percent'], ['filetype'] ] },
 	\ 'component': {
-	\     'filename': '%F'}
+	\     'filename': '%F',
+	\     'lineinfo': '%3l:%-2v'}
 	\ }
 
 " vimtex
