@@ -26,6 +26,7 @@
 .config/gtk-*/
 .config/inkscape/
 .config/midori/
+.config/obs-studio/
 .config/paradox-launcher*/
 .config/pipewire/
 .config/pulse/
@@ -94,5 +95,7 @@
 !.local/share/icons
 .local/share/icons/*/
 !.local/share/icons/dunst/
+
+# Local-only changes
 
 # vim: set ft=cfg:
