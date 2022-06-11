@@ -248,9 +248,9 @@ if $TERM =~ '^screen-256color'
 endif
 
 " Various CursorColor highlighting options
-map <F2> :set cc=0<CR>
-map <F3> :set cc=80,100 \| match ErrorMsg '\%>119v.\+'<CR>
-map <F4> :set cc=40,45,80<CR>
+map <silent> <F2> :set cc=0<CR>
+map <silent> <F3> :set cc=80,100 \| match ErrorMsg '\%>119v.\+'<CR>
+map <silent> <F4> :set cc=40,45,80<CR>
 
 " Navigate displayed lines instead of physical lines
 noremap  <buffer> <silent> k      gk
