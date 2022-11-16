@@ -1,0 +1,78 @@
+# ${XDG_CONFIG_HOME}/dunst/dunstrc
+#
+# Customized dunst config with nord theme
+
+[global]
+	# Display
+	monitor = 0
+	follow  = mouse
+	title   = Dunst
+	class   = Dunst
+
+	# Thresholds
+	idle_threshold     = 120
+	show_age_threshold = 60
+
+	# Grouping
+	indicate_hidden      = yes
+	sort                 = yes
+	stack_duplicates     = true
+	hide_duplicate_count = false
+
+	# Frame appearance
+	geometry            = "350x5-9+43"
+	frame_color         = "#81A1C1" # Frost - Medium blue
+	separator_color     = frame
+	notification_height = 75
+	transparency        = 0
+	separator_height    = 2
+	padding             = 8
+	horizontal_padding  = 8
+	frame_width         = 4
+	shrink              = false
+
+	# Text
+	format          = "<b>%s</b>\n%b"
+	font            = JetBrains Mono 10
+	line_height     = 5
+	markup          = full
+	alignment       = left
+	word_wrap       = yes
+	ignore_newline  = no
+	show_indicators = yes
+
+	# Icons
+	icon_position = left
+	max_icon_size = 64
+
+	# History
+	history_length = 20
+	sticky_history = yes
+
+	# Applications
+	dmenu   = /usr/bin/rofi -dmenu -p "dunst:"
+	browser = /usr/bin/brave
+
+[experimental]
+	per_monitor_dpi = false
+
+[urgency_low]
+	background  = "#3B4252" # Polar Night - Mid dark grey
+	foreground  = "#D8DEE9" # Snow Storm  - Dark white
+	frame_color = "#2E3440" # Polar Night - Dark grey
+	timeout     = 6
+	icon        = ~/.local/share/icons/dunst/notification-nord.png
+
+[urgency_normal]
+	background  = "#3B4252" # Polar Night - Mid dark grey
+	foreground  = "#ECEFF4" # Snow Storm  - Bright white
+	frame_color = "#5E81AC" # Frost       - Dark blue
+	timeout     = 6
+	icon        = ~/.local/share/icons/dunst/notification-nord.png
+
+[urgency_critical]
+	background  = "#3B4252" # Polar Night - Mid dark grey
+	foreground  = "#ECEFF4" # Snow Storm  - Bright white
+	frame_color = "#BF616A" # Aurora      - Red
+	timeout     = 0
+	icon        = ~/.local/share/icons/dunst/critical-nord.png
