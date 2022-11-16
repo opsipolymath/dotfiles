@@ -1,0 +1,17 @@
+
+# Summary: 50 chars maximum. That's here --------|
+
+
+# Body: Explain what and why, wrap at 72 characters. That's here ------|
+
+# Best practices for commit messages:
+#   1. Limit the subject line to 50 characters
+#   2. Capitalize the subject line, no period at end
+#   3. Separate subject from body with a blank line
+#   4. Use the imperative mood in the subject line
+#   5. Wrap the body at 72 characters
+#   6. Explain:
+#      i.   Why the changes were needed.
+#      ii.  Why the changes were made.
+#      iii. What effect the changes have.
+#   7. Refer to the issue # if in response to one
