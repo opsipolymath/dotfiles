@@ -1,2 +1,3 @@
 key_bindings:
-  - { key: Space, mods: Shift|Control, action: None }
+  - { key: Space, mods: Shift|Control, action:  None }
+  - { key: K,     mods: Control,       chars: "reset\x0D" }
