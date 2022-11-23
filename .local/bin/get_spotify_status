@@ -32,7 +32,4 @@ if [ "${__spotify_status}" = "Stopped" ]; then
 fi
 
 # Output playing media properly formatted
-playerctl --player="spotify" metadata --format "${__format}"
-
-# Unset variables
-unset __format __parent_bar __parent_bar_pid __spotify_status __exit_code
+printf %-*s "${1}" "$(playerctl --player="spotify" metadata --format "${__format}")"
