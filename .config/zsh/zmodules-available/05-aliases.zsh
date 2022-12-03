@@ -23,6 +23,7 @@ alias mkdiff="diff -U 99999"
 alias nv="/usr/bin/nvim"
 alias se="/usr/bin/sudoedit"
 alias aursync="/usr/bin/aur sync --no-view --sign --remove --chroot"
+alias info="/usr/bin/pinfo"
 
 # Make startx use dbus properly
 alias startx="/usr/bin/dbus-launch --exit-with-session /usr/bin/startx \"${XINITRC}\" &>/dev/null"
