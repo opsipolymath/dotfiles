@@ -267,10 +267,10 @@ map <silent> <F3> :set cc=80,100 \| match ErrorMsg '\%>119v.\+'<CR>
 map <silent> <F4> :set cc=40,45,80<CR>
 
 " Navigate displayed lines instead of physical lines
-noremap  k      gk
-noremap  j      gj
-noremap  <Home> g<Home>
-noremap  <End>  g<End>
+nnoremap  k      gk
+nnoremap  j      gj
+nnoremap  <Home> g<Home>
+nnoremap  <End>  g<End>
 inoremap <C-o>k <C-o>gk
 inoremap <C-o>j <C-o>gj
 inoremap <Home> <C-o>g<Home>
