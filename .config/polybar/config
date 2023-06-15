@@ -3,29 +3,30 @@
 ; Polybar config file
 
 [colors]
-background  = ${xrdb:background}
-foreground  = ${xrdb:foreground}
-primary     = ${xrdb:normalColor}
-secondary   = ${xrdb:activeColor}
-active      = ${xrdb:activeColor}
-faded       = ${xrdb:fadeColor}
-dark        = ${xrdb:darkColor}
-alert       = ${xrdb:alertColor}
-blue        = ${xrdb:blue}
-green       = ${xrdb:green}
-orange      = ${xrdb:orange}
-purple      = ${xrdb:purple}
-red         = ${xrdb:red}
-yellow      = ${xrdb:yellow}
-backlight   = ${colors.active}
-battery     = ${colors.active}
-date        = ${colors.active}
-keyboard    = ${colors.active}
-music       = ${colors.active}
-network     = ${colors.active}
-volume      = ${colors.active}
-mute        = ${colors.red}
-transparent = #00000000
+background   = ${xrdb:background}
+foreground   = ${xrdb:foreground}
+primary      = ${xrdb:normalColor}
+secondary    = ${xrdb:activeColor}
+active       = ${xrdb:activeColor}
+faded        = ${xrdb:fadeColor}
+dark         = ${xrdb:darkColor}
+alert        = ${xrdb:alertColor}
+blue         = ${xrdb:blue}
+green        = ${xrdb:green}
+orange       = ${xrdb:orange}
+purple       = ${xrdb:purple}
+red          = ${xrdb:red}
+yellow       = ${xrdb:yellow}
+backlight    = ${colors.active}
+battery      = ${colors.active}
+date         = ${colors.active}
+keyboard     = ${colors.active}
+music        = ${colors.active}
+network      = ${colors.active}
+volume       = ${colors.active}
+mute         = ${colors.red}
+disconnected = ${colors.red}
+transparent  = #00000000
 
 [global/wm]
 margin-top    = 5
@@ -47,7 +48,7 @@ line-color   = ${colors.active}
 
 modules-left   = bspwm
 modules-center = media output
-modules-right  = wlan eth xbacklight pulseaudio battery date bluetooth
+modules-right  = wlan0 wlan1 xbacklight pulseaudio battery date bluetooth
 tray-position  = right
 ; modules-right = mpd wlan eth xbacklight pulseaudio battery date bluetooth
 
@@ -155,7 +156,7 @@ format-connected-prefix-background   = ${colors.network}
 label-connected            = %local_ip%
 label-connected-foreground = ${colors.network}
 
-[module/wlan]
+[module/wlan0]
 type      = internal/network
 interface = wlan0
 interval  = 3.0
@@ -166,17 +167,18 @@ format-disconnected-prefix-font         = 2
 format-disconnected-prefix-padding      = 1
 format-disconnected-prefix-margin-right = 0
 format-disconnected-prefix-foreground   = ${colors.background}
-format-disconnected-prefix-background   = ${colors.network}
+format-disconnected-prefix-background   = ${colors.disconnected}
 
 label-disconnected            = %ifname%
-label-disconnected-foreground = ${colors.network}
+label-disconnected-foreground = ${colors.disconnected}
+label-disconnected-margin     = 1
 
 format-connected         = <ramp-signal><label-connected>
-ramp-signal-0            = 󰤯
-ramp-signal-1            = 󰤟
-ramp-signal-2            = 󰤢
-ramp-signal-3            = 󰤥
-ramp-signal-4            = 󰤨
+ramp-signal-0            = 󰤯0
+ramp-signal-1            = 󰤟0
+ramp-signal-2            = 󰤢0
+ramp-signal-3            = 󰤥0
+ramp-signal-4            = 󰤨0
 ramp-signal-foreground   = ${colors.background}
 ramp-signal-background   = ${colors.network}
 ramp-signal-font         = 2
@@ -184,6 +186,40 @@ ramp-signal-padding      = 1
 ramp-signal-margin-right = 0
 
 label-connected            = %essid%
+label-connected-foreground = ${colors.network}
+label-connected-margin     = 1
+
+[module/wlan1]
+type      = internal/network
+interface = wlan1
+interval  = 3.0
+
+format-disconnected                     = <label-disconnected>
+format-disconnected-prefix              = 󰤭
+format-disconnected-prefix-font         = 2
+format-disconnected-prefix-padding      = 1
+format-disconnected-prefix-margin-right = 0
+format-disconnected-prefix-foreground   = ${colors.background}
+format-disconnected-prefix-background   = ${colors.disconnected}
+
+label-disconnected            = %ifname%
+label-disconnected-foreground = ${colors.disconnected}
+label-disconnected-margin     = 1
+
+format-connected         = <ramp-signal><label-connected>
+ramp-signal-0            = 󰤯1
+ramp-signal-1            = 󰤟1
+ramp-signal-2            = 󰤢1
+ramp-signal-3            = 󰤥1
+ramp-signal-4            = 󰤨1
+ramp-signal-foreground   = ${colors.background}
+ramp-signal-background   = ${colors.network}
+ramp-signal-font         = 2
+ramp-signal-padding      = 1
+ramp-signal-margin-right = 0
+
+label-connected            = %essid%
+#label-connected            = %ifname% | %essid%
 label-connected-foreground = ${colors.network}
 label-connected-margin     = 1
 
