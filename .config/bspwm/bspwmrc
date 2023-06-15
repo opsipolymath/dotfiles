@@ -65,7 +65,16 @@ if ! pgrep -u "${USER}" brave && [ -f "${__brave_pref}" ]; then
 fi
 
 # Set permanent application positioning rules
-bspc rule -a Brave-browser desktop=^2 follow=on
+bspc rule -a "brave-browser"    desktop=^2 follow=on
+bspc rule -a "paradox launcher" desktop=^3 follow=on  state=floating
+bspc rule -a "steamwebhelper"   desktop=^8
+bspc rule -a "steam"            desktop=^8
+bspc rule -a "Emacs"            desktop=^3 follow=on  state=fullscreen
+
+# Move games to desktop 3
+bspc rule -a "eu4"           desktop=^3 follow=on  state=fullscreen
+bspc rule -a "RimWorldLinux" desktop=^3 follow=on  state=fullscreen
+
 if [ -d "${__rule_dir}" ]; then
 	for __rule_file in "${__rule_dir}"/*; do
 		bspc config external_rules_command "${__rule_file}"
@@ -81,6 +90,8 @@ bspc rule -a Alacritty     -o desktop=^1 follow=on
 pgrep -u "${USER}" brave     >/dev/null 2>&1 || brave &
 pgrep -u "${USER}" spotify   >/dev/null 2>&1 || spotify &
 pgrep -u "${USER}" alacritty >/dev/null 2>&1 || alacritty &
+pgrep -u "${USER}" steam     >/dev/null 2>&1 || steam &
+emacs --daemon &
 #pgrep hugo-server  >/dev/null 2>&1 || hugo-server  &
 #pgrep hugo-server2 >/dev/null 2>&1 || hugo-server2 &
 
@@ -94,6 +105,8 @@ feh --no-fehbg --bg-fill --randomize "${WALLPAPER_DIR}"/**
 for d in $(bspc query -D --names); do
 	bsp-layout set tall "${d}" -- --master-size 0.6
 done
+bspc desktop ^8 --layout monocle
+bspc desktop ^9 --layout monocle
 
 # Unset variables
 unset __base_config __bspwm_home __env_dir __rule_dir __polybar_bar
