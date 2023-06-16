@@ -13,6 +13,7 @@
 
 # Ignore specific configuration directories
 .config/BraveSoftware/
+.config/GIMP/
 .config/MusicBrainz/
 .config/PulseEffects/
 .config/VirtualBox/
@@ -21,6 +22,7 @@
 .config/cef_user_data/
 .config/chromium/
 .config/dconf/
+.config/emacs/
 .config/freerdp/
 .config/google-chrome/
 .config/gtk-*/
@@ -31,11 +33,16 @@
 .config/pipewire/
 .config/pulse/
 .config/qutebrowser/
+.config/rclone/
 .config/spotify*/
 .config/ssh/
 .config/systemd/user/default.target.wants/
 .config/tor/
 .config/unity3d/
+
+# Doom - Ignore everything except settings
+.config/doom/*
+!.config/doom/config.el
 
 # Code - Ignore everything except settigs
 .config/Code - OSS/*
