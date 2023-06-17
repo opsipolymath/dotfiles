@@ -7,16 +7,22 @@
 # bifrost() verifies at least a target is specified, but just passes
 # all params to ssh without modification
 function bifrost () {
+	tput sc
 	tput setaf 3
-	printf "   Heimdallr! Open the Bifröst!\n"
+	printf "   Heimdallr! Open the Bifröst!"
 	tput sgr0
+	sleep 0.7
+	tput rc
+	tput el
 
 	# Display an error if no target is given
 	if [[ $# < 1 ]]; then
 		tput setaf 1
-		sleep 0.2
-		printf "   You have to tell me where you're going!\n"
+		printf "   You have to tell me where you're going!"
 		tput sgr0
+		sleep 0.7
+		tput rc
+		tput el
 		return 1
 	fi
 
