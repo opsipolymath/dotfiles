@@ -7,8 +7,8 @@
 configuration {
 	modi:                  "run,drun,filebrowser,window,ssh";
 	show-icons:            true;
-	display-run:           "";
-	display-drun:          "";
+	display-run:          "";
+	display-drun:           "";
 	display-filebrowser:   "";
 	display-window:        "";
 	display-ssh:           "";
