@@ -24,16 +24,13 @@ super + alt + Return
 # -- Menus
 # Open the application menu
 super + a
-	rofi -show run
+	rofi -show run -theme launcher.rasi
 # Open the window selection menu
 super + w
-	rofi -show window
+	rofi -show window -theme launcher.rasi
 # Open the power menu
-super + Escape; p
+super + q
 	rofi-power
-# Open the wifi menu
-super + Escape; w
-	rofi-wifi
 
 # -- Reload
 # Restart bspwm
@@ -135,16 +132,16 @@ super + ctrl + space; a
 
 # -- Dunst
 # Close latest notification
-ctrl + space
+super + backslash
 	dunstctl close
 # Close all notifications
-ctrl+ shift + space
+super + shift + backslash
 	dunstctl close-all
 # Re-open last notification
-ctrl + grave
+super + shift + alt backslash
 	dunstctl history-pop
 # Execute notification action
-ctrl + shift + period
+super + shift + grave
 	dunstctl context
 
 # -- Spotify
