@@ -9,10 +9,10 @@ __AWK_PROCESS_SXHKDRC=$( cat << 'EOF'
 	/^# --/ {
 		if ( !($0 == "# -- General") )
 			print ""
-		print "<small>\t</small>",substr($0,3),"--"
+		print "<small>\t</small>   ",substr($0,6)
 	}
 	# Process hotkey lines
-	/^[a-zA-Z@]/ && explanation {
+	/^[a-z@]/ && explanation {
 		if ( !(substr($0,1,1) ~ /[a-zA-Z]/) )
 			$0=substr($0,2)
 		print "<small>",$0,"\t",explanation,"</small>"
@@ -28,4 +28,8 @@ EOF
 
 awk "${__AWK_PROCESS_SXHKDRC}" ~/.config/sxhkd/sxhkdrc |
 	column -L -t -s $'\t' |
-	rofi -dmenu -i -p "SXHKD HELP MENU" -markup-rows -width 1000 -lines 15 -yoffset 40
+	rofi -theme-str 'textbox-prompt {str: "󱠃";}' \
+		-dmenu -i \
+		-p "sxhkd Help Menu" \
+		-markup-rows \
+		-theme menu 
