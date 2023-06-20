@@ -2,35 +2,13 @@
 //
 // Custom Nord theme for rofi
 
-* {
-	nord0:  #2E3440;
-	nord1:  #3B4252;
-	nord2:  #434C5E;
-	nord3:  #4C566A;
-	nord4:  #D8DEE9;
-	nord5:  #E5E9F0;
-	nord6:  #ECEFF4;
-	nord7:  #8FBCBB;
-	nord8:  #88C0D0;
-	nord9:  #81A1C1;
-	nord10: #5E81AC;
-	nord11: #BF616A;
-	nord12: #D08770;
-	nord13: #EBCB8B;
-	nord14: #A3BE8C;
-	nord15: #B48EAD;
-
-	transparent:           @nord0;
-	foreground:            @nord9;
-	background-color: transparent;
-	highlight:     underline bold;
-}
+@import "colors/nord.rasi"
 
 window {
 	location:               center;
 	anchor:                 center;
 	transparency:     "screenshot";
-	background-color: @transparent;
+	background-color:  @background;
 	spacing:                     0;
 	children:            [mainbox];
 	orientation:        horizontal;
@@ -44,8 +22,8 @@ mainbox {
 message {
 	padding:                5;
 	border:   0px 2px 2px 2px;
-	color:             @nord0;
-	background-color:  @nord7;
+	color:        @background;
+	background-color: @nord08;
 	border-color: @foreground;
 }
 
@@ -53,9 +31,9 @@ inputbar {
 	theme: "nord";
 	padding:             11px;
 	border:               1px;
-	color:             @nord6;
-	background-color:  @nord1;
-	border-color:     @nord10;
+	color:            @nord07;
+	background-color: @nord02;
+	border-color:     @nord11;
 }
 
 entry, prompt, case-indicator {
@@ -68,11 +46,11 @@ prompt {
 }
 
 listview {
-	padding:             8px;
-	border:  0px 1px 1px 1px;
-	border-color:    @nord10;
-	background-color: @nord0;
-	dynamic:           false;
+	padding:              8px;
+	border:   0px 1px 1px 1px;
+	border-color:     @nord11;
+	background-color: @nord01;
+	dynamic:            false;
 }
 
 element {
@@ -80,12 +58,12 @@ element {
 	vertical-align:           0.5;
 	background-color: transparent;
 	color:            @foreground;
-	text-color:            @nord4;
+	text-color:           @nord05;
 }
 
 element selected.normal {
-	background-color: @nord7;
-	text-color:       @nord0;
+	background-color: @nord08;
+	text-color:       @nord01;
 }
 
 element-text, element-icon {
