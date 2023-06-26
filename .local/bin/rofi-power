@@ -3,9 +3,9 @@
 __prompt="$(hostname)"
 __msg="Uptime: $(uptime -p | sed -e 's/up //')"
 
-__lock=""
-__reboot=""
-__poweroff=""
+__lock="󰍁"
+__reboot="󰦛"
+__poweroff="󰐥"
 
 rofi_cmd() {
 	rofi -theme-str 'textbox-prompt {str: "󰐥";}' \

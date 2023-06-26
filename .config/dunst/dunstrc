@@ -33,7 +33,7 @@
 
 	# Text
 	format          = "<b>%s</b>\n%b"
-	font            = JetBrains Mono 10
+	font            = JetBrains Mono Nerd Font 10
 	line_height     = 5
 	markup          = full
 	alignment       = left
