@@ -1,7 +1,8 @@
 #! /bin/sh
 
+
 __yes='󰄴'
-__no=''
+__no='󰅚'
 
 __result="$( echo -e "${__yes}\n${__no}" |
 	rofi -theme-str 'textbox-prompt {str: "󰋖";}' \
