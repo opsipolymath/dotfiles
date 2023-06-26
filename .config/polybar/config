@@ -39,20 +39,20 @@ radius       = ${xrdb:radius}
 fixed-center = false
 enable-ipc   = true
 
-background   = ${colors.background}
-foreground   = ${colors.foreground}
-border-size  = ${xrdb:gap}
-border-color = ${colors.transparent}
-line-size    = 3
-line-color   = ${colors.active}
+background      = ${colors.background}
+foreground      = ${colors.foreground}
+border-size     = ${xrdb:gap}
+border-color    = ${colors.transparent}
+line-size       = 3
+line-color      = ${colors.active}
+tray-background = ${colors.faded}
 
 modules-left   = bspwm
 modules-center = media output
-modules-right  = wlan0 wlan1 xbacklight pulseaudio battery date bluetooth
+modules-right  = wlan0 wlan1 xbacklight pulseaudio battery date
 tray-position  = right
-; modules-right = mpd wlan eth xbacklight pulseaudio battery date bluetooth
 
-font-0 = JetBrains Mono:style=Regular:pixelsize=9:antialias=true;2
+font-0 = JetBrains Mono Nerd Font:style=Regular:pixelsize=9:antialias=true;2
 font-1 = Material Design Icons:pixelsize=12:style=Regular;4
 font-2 = Junicode:style=Bold:pixelsize=12:antialias=true;3
 
@@ -364,16 +364,5 @@ format-prefix-background   = ${colors.date}
 label              = %date%%time%
 label-foreground   = ${colors.date}
 label-margin       = 1
-
-[module/bluetooth]
-type       = custom/text
-click-left = blueman-manager
-
-content              = 󰂯
-content-font         = 2
-content-padding      = 1
-content-margin-right = 0
-content-foreground   = ${colors.date}
-content-background   = ${colors.dark}
 
 ; vim:ft=cfg
