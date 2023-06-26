@@ -99,9 +99,10 @@
 !.local/share/gnupg/gpg.conf
 !.local/share/gnupg/gpg-agent.conf
 
-# Track custom icons
+# Track custom icons for dunst and X11
 !.local/share/icons
 .local/share/icons/*/
+!.local/share/icons/hicolor/
 !.local/share/icons/dunst/
 
 # Local-only changes

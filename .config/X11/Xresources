@@ -68,3 +68,6 @@
 *.color13: nord15
 *.color14: nord7
 *.color15: nord6
+
+! Change cursor theme
+Xcursor.theme: hicolor
