@@ -105,6 +105,9 @@
 !.local/share/icons/hicolor/
 !.local/share/icons/dunst/
 
+# Track custom fints
+!.local/share/fonts
+
 # Local-only changes
 
 # vim: set ft=cfg:
