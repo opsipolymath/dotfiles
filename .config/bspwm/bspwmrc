@@ -50,10 +50,11 @@ bspc config normal_border_color  "$( xcolor normalColor )"
 
 # Start background helpers
 polybar -r "${__polybar_bar}" &
-lxpolkit   &
-picom      &
-sxhkd      &
-mpd-mpris  &
+lxpolkit       &
+picom          &
+sxhkd          &
+mpd-mpris      &
+blueman-applet &
 playerctld daemon
 
 # Fix brave being stupid and thinking it's crashed constantly
@@ -85,6 +86,7 @@ fi
 # Set temporary applicatoin rules for startup
 bspc rule -a Brave-browser -o desktop=^2 follow=off
 bspc rule -a Alacritty     -o desktop=^1 follow=on
+bspc rule -a Spotify       -o desktop=^9 follow=off
 
 # Startup user applicatoins if not already running
 pgrep -u "${USER}" brave     >/dev/null 2>&1 || brave &
