@@ -57,6 +57,10 @@
 # mopidy - Don't track config with secrets added
 .config/mopidy/mopidy.conf
 
+# neomutt - Allow tracking of main config only
+.config/neomutt/*
+!.config/neomutt/neomuttrc
+
 # Ignore specific files in tracked directories
 .config/dwarftherapist/
 .config/libreoffice/
