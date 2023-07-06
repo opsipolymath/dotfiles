@@ -6,13 +6,10 @@
 # Export all variables
 set -a
 
-# Source environment.d files if any exist
-__confs=( "${HOME}"/.config/environment.d/*.conf(N) )
-for __conf in "${__confs[@]}"; do
-	source "${__conf}"
-	unset __conf
-done
-unset __confs
+# Source environment.d config file if it exists
+if [[ -f "${HOME}/.config/environment.d/00-zsh.conf" ]]; then
+	. "${HOME}/.config/environment.d/00-zsh.conf"
+fi
 
 # Update path
 path=( "${HOME}/.local/bin" ${path} )

@@ -1,6 +1,4 @@
-#!/bin/zsh
-
-# ${ZDOTDIR}/zmodules-available/05-update.zsh
+# ${XDG_CONFIG_HOME}/shell-modules/05-update.sh
 #
 # A more efficient function for updating Archlinux
 

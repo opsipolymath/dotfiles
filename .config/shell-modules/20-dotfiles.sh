@@ -1,6 +1,4 @@
-#!/bin/zsh
-
-# ${ZDOTDIR}/zmodules-available/20-dotfiles.sh
+# {XDG_CONFIG_HOME}/shell-modules/20-dotfilessh
 #
 # Settings, functions and aliases related to dotfiles
 

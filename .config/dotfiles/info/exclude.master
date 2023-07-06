@@ -5,6 +5,10 @@
 # Exclude everything by default and all backup files
 /*
 
+# Track bash configuration files for now
+!.bashrc
+!.bash_profile
+
 # Track configuration directory
 !.config
 
@@ -75,6 +79,7 @@
 .config/zsh/.histfile
 .config/zsh/.zcompdump
 .config/zsh/zmodules-enabled/
+.config/bash/.histfile
 
 # Track dotfiles master exclusion file only
 .config/dotfiles/*

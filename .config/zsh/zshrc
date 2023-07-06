@@ -20,7 +20,7 @@ export KEYTIMEOUT=10
 tabs -4
 
 # Load custom modules
-__zmodules=( "${ZDOTDIR}"/zmodules-enabled/*.zsh(N) )
+__zmodules=( "${ZDOTDIR}"/zmodules-enabled/*.{sh,zsh}(N) )
 for __zmodule in "${__zmodules[@]}"; do
 	source "${__zmodule}"
 	unset __zmodule

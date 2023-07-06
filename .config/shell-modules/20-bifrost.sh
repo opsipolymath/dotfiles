@@ -1,12 +1,11 @@
-#!/bin/zsh
-
-# ${ZDOTDIR}/zmodules-available/20-bifrost.zsh
+# {XDG_CONFIG_HOME}/shell-modules/20-bifrost.sh
 #
 # Colorful, fun way to call ssh
 
 # bifrost() verifies at least a target is specified, but just passes
 # all params to ssh without modification
 function bifrost () {
+	tput civis
 	tput sc
 	tput setaf 3
 	printf "   Heimdallr! Open the Bifröst!"

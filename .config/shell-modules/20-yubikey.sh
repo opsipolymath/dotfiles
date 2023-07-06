@@ -1,6 +1,4 @@
-#!/bin/zsh
-
-# ${ZDOTDIR}/zmodules-available/20-yubikey.zsh
+# {XDG_CONFIG_HOME}/shell-modules/20-yubikey.sh
 #
 # Settings related to yubikeys
 

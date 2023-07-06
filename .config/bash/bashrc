@@ -1,0 +1,49 @@
+# "${XDG_CONFIG_HOME}/bash/bashrc
+#
+# Main rc file for bash shells
+# Loaded only for interactive shells
+
+# Report errors if glob doesn't match anything
+shopt -s failglob
+# Don't beep at me
+bind 'set bell-style visible'
+
+# Use vim mode, but still let CTRL+l clear the screen
+set -o vi
+bind -m vi-insert "\C-l":clear-screen
+
+# Set tab size
+tabs -4
+
+# Set history options
+export HISTFILE="${XDG_CONFIG_HOME:-$HOME/.config}/bash/.histfile"
+export HISTSIZE=200000
+export HISTFILESIZE=200000
+export HISTCONTROL=ignoreboth:erasedups
+
+# Better update function
+function update() {
+	__updates="$( checkupdates )"
+	if [[ -z "${__updates}" ]]; then
+		printf "No updates available.\n"
+		return 0
+	fi
+	if echo "${__updates}" | grep -q 'archlinux-keyring'; then
+		sudo pacman -Sy archlinux-keyring && sudo pacman -Su
+		return "$?"
+	fi
+	sudo pacman -Syu
+	return "$?"
+}
+
+# Load prompt
+[[ -f "${XDG_CONFIG_HOME}/bash/prompt.bash" ]] &&
+	source "${XDG_CONFIG_HOME}/bash/prompt.bash"
+
+# Load modules
+__bash_modules="${XDG_CONFIG_HOME:-$HOME/.config}/shell-modules/*.sh"
+for __bash_module in ${__bash_modules}; do
+	source "${__bash_module}"
+	unset __bash_module
+done
+unset __bash_modules

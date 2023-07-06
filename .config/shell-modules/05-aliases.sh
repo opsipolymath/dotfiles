@@ -1,6 +1,4 @@
-#!/bin/zsh
-
-# ${ZDOTDIR}/zmodules-available/05-aliases.zsh
+# ${XDG_CONFIG_HOME}/shell-modules/05-aliases.sh
 #
 # General aliases
 

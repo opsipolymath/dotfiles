@@ -110,6 +110,9 @@ set_prompt () {
 	if [[ "${KEYMAP}" == vicmd ]]; then
 		echo -ne '\e[2 q'
 	fi
+
+	# Reset visibility status
+	tput cnorm
 }
 
 # Re-evaluate prompt when mode changes
