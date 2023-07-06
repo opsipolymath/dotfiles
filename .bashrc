@@ -4,8 +4,8 @@
 [[ $- != *i* ]] && return
 
 # Run actual bashrc, if it exists
-if [[ -f "$XDG_CONFIG_HOME"/bash/bashrc ]]; then
-	. "${XDG_CONFIG_HOME}"/bash/bashrc
+if [[ -f "$XDG_CONFIG_HOME"/bashdir/bashrc ]]; then
+	. "${XDG_CONFIG_HOME}"/bashdir/bashrc
 	return
 fi
 

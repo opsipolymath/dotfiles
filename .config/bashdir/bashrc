@@ -1,4 +1,4 @@
-# "${XDG_CONFIG_HOME}/bash/bashrc
+# "${XDG_CONFIG_HOME}/bashdir/bashrc
 #
 # Main rc file for bash shells
 # Loaded only for interactive shells
@@ -16,7 +16,7 @@ bind -m vi-insert "\C-l":clear-screen
 tabs -4
 
 # Set history options
-export HISTFILE="${XDG_CONFIG_HOME:-$HOME/.config}/bash/.histfile"
+export HISTFILE="${XDG_CONFIG_HOME:-$HOME/.config}/bashdir/.histfile"
 export HISTSIZE=200000
 export HISTFILESIZE=200000
 export HISTCONTROL=ignoreboth:erasedups
@@ -37,8 +37,8 @@ function update() {
 }
 
 # Load prompt
-[[ -f "${XDG_CONFIG_HOME}/bash/prompt.bash" ]] &&
-	source "${XDG_CONFIG_HOME}/bash/prompt.bash"
+[[ -f "${XDG_CONFIG_HOME}/bashdir/prompt.bash" ]] &&
+	source "${XDG_CONFIG_HOME}/bashdir/prompt.bash"
 
 # Load modules
 __bash_modules="${XDG_CONFIG_HOME:-$HOME/.config}/shell-modules/*.sh"

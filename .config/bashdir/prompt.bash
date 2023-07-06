@@ -1,4 +1,4 @@
-# "${XDG_CONFIG_HOME}/bash/prompt.bash
+# "${XDG_CONFIG_HOME}/bashdir/prompt.bash
 #
 # Sets the bash prompt
 
