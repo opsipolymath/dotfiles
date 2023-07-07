@@ -43,6 +43,7 @@
 .config/systemd/user/default.target.wants/
 .config/tor/
 .config/unity3d/
+.config/yams/
 
 # Doom - Ignore everything except settings
 .config/doom/*
