@@ -8,7 +8,7 @@ function ncmpcpp() {
 	# ncmpcpp.
 	__layout="$(bsp-layout get)"
 	bsp-layout set wide &>/dev/null && sleep 0.5
-	( /usr/bin/alacritty -e cava & ) sleep 0.5
+	( /usr/bin/alacritty -e cava & ) && sleep 0.5
 	bspc node -f prev.local.!hidden.window
 	/usr/bin/ncmpcpp -q $@
 
