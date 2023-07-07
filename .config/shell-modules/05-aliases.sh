@@ -22,7 +22,6 @@ alias nv="/usr/bin/nvim"
 alias em="emacsclient -c -a 'emacs'"
 alias emacs="emacsclient -c -a 'emacs'"
 alias se="/usr/bin/sudoedit"
-alias aursync="/usr/bin/aur sync --no-view --sign --remove --chroot"
 alias info="/usr/bin/pinfo"
 alias steam="/usr/bin/steam -nochatui -nofriendsui -silent"
 
