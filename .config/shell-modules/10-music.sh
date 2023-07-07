@@ -3,20 +3,20 @@
 # Functions related to music applications
 
 function ncmpcpp() {
-	if ! systemctl is-active --quiet --user mopidy; then
-		printf 'ERROR: Mopidy is not running.\n'
-		printf 'Should I start it? '
-		reply=$(bash -c "read -n1 r; echo \${r,,}")
-		printf '\n'
-		if [[ y != ${reply} ]]; then
-			return
-		fi
-		/usr/bin/systemctl --user start mopidy
-	fi
-	( /usr/bin/alacritty -e cava & )
-	/usr/bin/ncmpcpp -q
-	/usr/bin/killall cava
+	# Store the current desktop layout, switch to wide,
+	# launch cava, tab back to original window, and launch
+	# ncmpcpp.
+	__layout="$(bsp-layout get)"
+	bsp-layout set wide &>/dev/null && sleep 0.5
+	( /usr/bin/alacritty -e cava & ) sleep 0.5
+	bspc node -f prev.local.!hidden.window
+	/usr/bin/ncmpcpp -q $@
+
+	# On shutdown, kill cava and restore original layout
+	# if it hasn't been changed
+	/usr/bin/killall cava &>/dev/null
+	[[ "wide" == "$(bsp-layout get)" ]] &&
+		bsp-layout set $__layout &>/dev/null
 }
 
 alias nc="ncmpcpp"
-alias ncmp_help="brave 'https://pkgbuild.com/~jelle/ncmpcpp/'"
