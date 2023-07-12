@@ -38,6 +38,7 @@
 .config/pulse/
 .config/qutebrowser/
 .config/rclone/
+.config/repoctl/
 .config/spotify*/
 .config/ssh/
 .config/systemd/user/default.target.wants/
