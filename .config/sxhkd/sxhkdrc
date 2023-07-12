@@ -6,6 +6,9 @@
 # Show the help menu
 super + slash
 	sxhkd-help
+# Lock the session
+super + l
+	loginctl lock-session
 # Take a screenshot
 @Print
 	scrot "$HOME/Downloads/Screenshot-$(date +%+4Y%m%d%H%M%S).png"
