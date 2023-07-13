@@ -1,0 +1,16 @@
+[Unit]
+Description=Emacs: the extensible, self-documenting text editor
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=forking
+ExecStartPre=/usr/lib/systemd/systemd-networkd-wait-online --any
+ExecStart=/usr/bin/emacs --daemon
+ExecStop=/usr/bin/emacsclient --eval "(kill-emacs)"
+Restart=always
+
+TimeoutStartSec=0
+
+[Install]
+WantedBy=default.target

@@ -93,7 +93,6 @@ pgrep -u "${USER}" brave     >/dev/null 2>&1 || brave &
 pgrep -u "${USER}" spotify   >/dev/null 2>&1 || spotify &
 pgrep -u "${USER}" alacritty >/dev/null 2>&1 || alacritty &
 pgrep -u "${USER}" steam     >/dev/null 2>&1 || steam &
-emacs --daemon &
 #pgrep hugo-server  >/dev/null 2>&1 || hugo-server  &
 #pgrep hugo-server2 >/dev/null 2>&1 || hugo-server2 &
 
