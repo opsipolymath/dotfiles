@@ -88,7 +88,7 @@ bspc rule -a Brave-browser -o desktop=^2 follow=off
 bspc rule -a Alacritty     -o desktop=^1 follow=on
 bspc rule -a Spotify       -o desktop=^9 follow=off
 
-# Startup user applicatoins if not already running
+# Startup user applications if not already running
 pgrep -u "${USER}" brave     >/dev/null 2>&1 || brave &
 pgrep -u "${USER}" spotify   >/dev/null 2>&1 || spotify &
 pgrep -u "${USER}" alacritty >/dev/null 2>&1 || alacritty &
@@ -97,7 +97,7 @@ pgrep -u "${USER}" steam     >/dev/null 2>&1 || steam &
 #pgrep hugo-server2 >/dev/null 2>&1 || hugo-server2 &
 
 # Setup lockscreen and wallpaper
-xss-lock -- betterlockscreen -l -- \
+xss-lock -- betterlockscreen --lock pixel -- \
 	 --greeter-text "Locked by ${USER^}." \
 	 --verif-text "" &
 feh --no-fehbg --bg-fill --randomize "${WALLPAPER_DIR}"/**
