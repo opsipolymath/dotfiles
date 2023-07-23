@@ -70,7 +70,7 @@ bspc rule -a "brave-browser"    desktop=^2 follow=on
 bspc rule -a "paradox launcher" desktop=^3 follow=on  state=floating
 bspc rule -a "steamwebhelper"   desktop=^8
 bspc rule -a "steam"            desktop=^8
-bspc rule -a "Emacs"            desktop=^3 follow=on  state=fullscreen
+bspc rule -a "Emacs"                                  state=tiled
 
 # Move games to desktop 3
 bspc rule -a "eu4"           desktop=^3 follow=on  state=fullscreen
