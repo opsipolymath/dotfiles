@@ -5,6 +5,9 @@
 # Exclude everything by default and all backup files
 /*
 
+# Never track uuid files
+.uuid
+
 # Track bash configuration files for now
 !.bashrc
 !.bash_profile
