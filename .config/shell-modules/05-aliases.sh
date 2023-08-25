@@ -6,6 +6,7 @@
 alias sudo="/usr/bin/sudo "
 
 # Default options for commonly used commands
+alias cd="cd -P"
 alias cp="cp -v"
 alias mv="mv -v"
 alias acp="/usr/bin/advcp -g"
