@@ -4,8 +4,8 @@
 
 # Directories
 ncmpcpp_directory = ~/.config/ncmpcpp
-lyrics_directory  = ~/Music/lyrics
-mpd_music_dir     = ~/Music/albums
+lyrics_directory  = ~/Audio/Music/lyrics
+mpd_music_dir     = ~/Audio/Music/albums
 
 # Connection settings
 mpd_host               = localhost
