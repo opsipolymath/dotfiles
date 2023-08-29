@@ -2,6 +2,24 @@
 #
 # Functions related to music applications
 
+function alarm() {
+	# Use 'at' as a simple alarm clock
+	if (( $# < 1 )); then
+		printf 'ERROR: Insufficient arguments.\m'
+		printf '\tUsage:   alarm [time] [file]\n'
+		printf '\tExample: alarm 12:00 alarm.mp3\n'
+		return 1
+	fi
+	if (( $# > 1 )); then
+		echo "mpg123 \"$2\"" | at $1
+		return 0
+	fi
+	[[ ! -f "$HOME/Audio/Alarms/default" ]] &&
+		printf 'ERROR: No alarm defined.\n' &&
+		return 1
+	echo "mpg123 \"$HOME/Audio/Alarms/default\"" | at "$1"
+}
+
 function ncmpcpp() {
 	# Store the current desktop layout, switch to wide,
 	# launch cava, tab back to original window, and launch
