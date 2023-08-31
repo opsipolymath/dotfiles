@@ -3,21 +3,25 @@
 # Functions related to music applications
 
 function alarm() {
-	# Use 'at' as a simple alarm clock
+	# Create a symbolic link playalarm in path linking to /usr/bin/mpg123 make this work
 	if (( $# < 1 )); then
 		printf 'ERROR: Insufficient arguments.\m'
 		printf '\tUsage:   alarm [time] [file]\n'
 		printf '\tExample: alarm 12:00 alarm.mp3\n'
 		return 1
 	fi
+	if [[ "-k" == "$1" ]]; then
+		killall playalarm
+		return 0
+	fi
 	if (( $# > 1 )); then
-		echo "mpg123 \"$2\"" | at $1
+		echo "playalarm \"$2\"" | at $1
 		return 0
 	fi
 	[[ ! -f "$HOME/Audio/Alarms/default" ]] &&
 		printf 'ERROR: No alarm defined.\n' &&
 		return 1
-	echo "mpg123 \"$HOME/Audio/Alarms/default\"" | at "$1"
+	echo "playalarm \"$HOME/Audio/Alarms/default\"" | at "$1"
 }
 
 function ncmpcpp() {
