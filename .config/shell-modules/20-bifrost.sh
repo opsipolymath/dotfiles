@@ -42,6 +42,9 @@ function bifrost () {
 	printf "\n"
 	tput sgr0
 
+	# Update tty for password entry
+	echo UPDATESTARTUPTTY | gpg-connect-agent &>/dev/null
+
 	# Use custom SSH config if set
 	if [[ -n "${SSH_CONFIG}" ]]; then
 		/usr/bin/ssh -F "${SSH_CONFIG}" "$@"
