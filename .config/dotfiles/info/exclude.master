@@ -43,6 +43,7 @@
 .config/rclone/
 .config/repoctl/
 .config/spotify*/
+.config/sqlitebrowser/
 .config/ssh/
 .config/systemd/user/default.target.wants/
 .config/tor/
