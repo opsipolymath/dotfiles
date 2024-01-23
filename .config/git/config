@@ -5,7 +5,7 @@
 [user]
 	email      = opsipolymath+github@gmail.com
 	name       = opsipolymath
-	signingkey = 43B3A8D8
+	signingkey = 0164B836
 [commit]
 	gpgsign = true
 	template = ~/.config/git/commit-msg
