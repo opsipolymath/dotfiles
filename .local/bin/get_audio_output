@@ -5,7 +5,7 @@
 # Outputs icon for pulseaudio current selected output port
 
 # Check if using Schiit Fulla
-if pactl get-default-sink | grep -q Schiit; then
+if pactl get-default-sink | grep -q 'Schiit\|bluez_sink'; then
 	printf '%%{R} 󰋎 '
 	exit
 fi
