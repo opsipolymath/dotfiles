@@ -16,7 +16,7 @@ bind -m vi-insert "\C-l":clear-screen
 tabs -4
 
 # Set history options
-export HISTFILE="${XDG_CONFIG_HOME:-$HOME/.config}/bashdir/.histfile"
+export HISTFILE="${XDG_CONFIG_HOME:-${HOME}/.config}/shell/.histfile"
 export HISTSIZE=200000
 export HISTFILESIZE=200000
 export HISTCONTROL=ignoreboth:erasedups
