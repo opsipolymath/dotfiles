@@ -5,6 +5,9 @@
 # Fix sudo so alias expansion works
 alias sudo="/usr/bin/sudo "
 
+# Fixes for applications that require arguments to respect XDG
+alias irssi="irssi --home=\"${XDG_CONFIG_HOME}/irssi\""
+
 # Default options for commonly used commands
 alias cd="cd -P"
 alias cp="cp -v"
