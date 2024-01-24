@@ -1,0 +1,9 @@
+[[keyboard.bindings]]
+action = "None"
+key = "Space"
+mods = "Shift|Control"
+
+[[keyboard.bindings]]
+chars = "reset\r"
+key = "K"
+mods = "Control"
