@@ -36,6 +36,7 @@
 .config/google-chrome/
 .config/gtk-*/
 .config/inkscape/
+.config/irssi/
 .config/midori/
 .config/obs-studio/
 .config/paradox-launcher*/
