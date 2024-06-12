@@ -1,0 +1,43 @@
+#!/usr/bin/zsh
+
+# ${ZDOTDIR}/keybindings
+#
+# Keybindings for consoles/ssh
+
+# Load the modules for searching and completions
+autoload -U  up-line-or-beginning-search
+autoload -U  down-line-or-beginning-search
+zmodload zsh/complist
+
+# Create widgets to enable searching with arrow keys
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+
+# Standard console
+bindkey "\e[A"  up-line-or-beginning-search
+bindkey "\e[B"  down-line-or-beginning-search
+bindkey "\e[1~" beginning-of-line
+bindkey "\e[H"  beginning-of-line
+bindkey "\e[4~" end-of-line
+bindkey "\e[F"  end-of-line
+bindkey "\e[5~" history-beginning-search-backward
+bindkey "\e[6~" history-beginning-search-forward
+
+# Non-standard console
+bindkey "${terminfo[kcuu1]}" up-line-or-beginning-search
+bindkey "${terminfo[kcud1]}" down-line-or-beginning-search
+bindkey "${terminfo[khome]}" beginning-of-line
+bindkey "${terminfo[kend]}"  end-of-line
+bindkey "${terminfo[kdch1]}" delete-char
+bindkey "${terminfo[kpp]}"   history-beginning-search-backward
+bindkey "${terminfo[knp]}"   history-beginning-search-forward
+
+# Fix delete key
+bindkey "\e[3~" delete-char
+bindkey "^[[P"  delete-char
+
+# Allow vim keys in completion menus
+bindkey -M menuselect 'h' vi-backward-char
+bindkey -M menuselect 'k' vi-up-line-or-history
+bindkey -M menuselect 'j' vi-down-line-or-history
+bindkey -M menuselect 'l' vi-forward-char

@@ -1,0 +1,18 @@
+#! /bin/sh
+
+
+__yes='󰄴'
+__no='󰅚'
+
+__result="$( echo -e "${__yes}\n${__no}" |
+	rofi -theme-str 'textbox-prompt {str: "󰋖";}' \
+		-theme-str 'listview { columns: 2; lines: 1;}' \
+		-dmenu \
+		-p "Confirmation" \
+		-mesg "${1:-Are you sure?}" \
+		-theme applet )"
+
+if [[ "$__result" == "$__yes" ]]; then
+	exit 0
+fi
+exit 1

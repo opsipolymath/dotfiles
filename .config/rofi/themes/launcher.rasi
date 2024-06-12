@@ -1,0 +1,176 @@
+// $XDG_CONFIG_HOME/rofi/themes/launcher.rasi
+//
+// Custom launcher theme for rofi
+
+@import "colors/nord.rasi"
+
+configuration {
+	modi:                  "run,drun,filebrowser,window,ssh,wifi:iwdrofimenu";
+	show-icons:            true;
+	display-run:          "";
+	display-drun:           "";
+	display-filebrowser:   "";
+	display-window:        "";
+	display-ssh:           "";
+	display-wifi:          "";
+	drun-display-format:   "{name}";
+	window-format:         "{w} · {c} · {t}";
+	parse-known-hosts:     false;
+}
+
+window {
+	transparency:          "real";
+	location:              west;
+	anchor:                west;
+	fullscreen:            false;
+	width:                 500px;
+	height:                100%;
+	x-offset:              0px;
+	y-offset:              0px;
+	margin:                8px;
+	enabled:               true;
+	cursor:                "default";
+	background-color:      @background-light;
+	border:                3px;
+	border-color:          @selected;
+}
+
+mainbox {
+	enabled:               true;
+	spacing:               0px;
+	backgrond-color:       transparent;
+	orientation:           vertical;
+	children:              [ "inputbar", "listbox", "mode-switcher" ];
+}
+
+inputbar {
+	enabled:               true;
+	spacing:               10px;
+	padding:               40px 15px 155px;
+	background-color:      transparent;
+	background-image:      url("~/.config/rofi/images/launcher.png", width);
+	text-color:            @foreground;
+	orientation:           horizontal;
+	children:              [ "entry" ];
+}
+
+entry {
+	enabled:               true;
+	expand:                true;
+	padding:               15px 15px;
+	background-color:      @background-light;
+	text-color:            inherit;
+	cursor:                text;
+	placeholder:           "Search";
+	placeholder-color:     inherit;
+}
+
+listbox {
+	spacing:               15px;
+	padding:               15px;
+	background-color:      transparent;
+	orientation:           vertical;
+	children:              [ "message", "listview" ];
+	border:                1px 0px;
+	border-color:          @selected;
+}
+
+message {
+	background-color:      transparent;
+}
+
+listview {
+	enabled:               true;
+	columns:               1;
+	lines:                 10;
+	cycle:                 true;
+	dynamic:               true;
+	scrollbar:             false;
+	layout:                vertical;
+	reverse:               false;
+	fixed-height:          true;
+	fixed-columns:         true;
+	spacing:               10px;
+	background-color:      transparent;
+	text-color:            @foreground;
+	cursor:                "default";
+}
+
+mode-switcher {
+	enabled:               true;
+	padding:               15px;
+	spacing:               10px;
+	background-color:      transparent;
+	text-color:            @foreground;
+}
+
+button {
+	padding:               12px;
+	background-color:      @background-light;
+	text-color:            inherit;
+	cursor:                pointer;
+}
+
+button selected {
+	background-color:      @selected;
+	text-color:            @foreground;
+}
+
+element {
+	enabled:               true;
+	spacing:               10px;
+	padding:               8px;
+	background-color:      transparent;
+	text-color:            @foreground;
+	cursor:                pointer;
+}
+element normal.normal {
+	background-color:      inherit;
+	text-color:            inherit;
+}
+element normal.urgent {
+	background-color:      @urgent;
+	text-color:            @foreground;
+}
+element normal.active {
+	background-color:      @active;
+	text-color:            @foreground;
+}
+element selected.normal {
+	background-color:      @selected;
+	text-color:            @foreground;
+}
+element selected.urgent {
+	background-color:      @urgent;
+	text-color:            @foreground;
+}
+element selected.active {
+	background-color:      @urgent;
+	text-color:            @foreground;
+}
+element-icon {
+	background-color:      transparent;
+	text-color:            inherit;
+	size:                  24px;
+	cursor:                inherit;
+}
+element-text {
+	background-color:      transparent;
+	text-color:            inherit;
+	cursor:                inherit;
+	vertical-align:        0.5;
+	horizontal-align:      0.0;
+}
+
+textbox {
+	padding:               12px;
+	background-color:      @background-light;
+	text-color:            @foreground;
+	vertical-align:        0.5;
+	horizontal-align:      0.0;
+}
+error-message {
+	padding:               12px;
+	background-color:      @background;
+	text-color:            @foreground;
+}

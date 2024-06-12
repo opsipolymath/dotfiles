@@ -1,0 +1,25 @@
+#!/usr/bin/bash
+
+# ${BDOTDIR}/tmux
+#
+# Bash-specific tmux-related functions
+
+# Call 'exit' if there are other panes or windows, detach otherwise
+tmux_exit_maybe() {
+	[ -n "$READLINE_LINE" ] && return
+	[ "$(tmux list-windows | wc -l)" -gt 1 ] && exit
+	[ "$(tmux list-panes | wc -l)" -gt 1 ]  && exit
+	echo "Ignoring exit..."
+}
+
+# Default binding when not using tmux
+stty eof '^D'
+bind '"\C-d": vi-eof-maybe'
+
+# Bind ^D to tmux-specific exit/detach function
+if [ -n "${TMUX}" ]; then
+	stty eof '^T'
+	bind '"\C-d": "\C-x\C-t\C-x\C-d"'
+	bind -x '"\C-x\C-t": tmux_exit_maybe'
+	bind '"\C-x\C-d": vi-eof-maybe'
+fi

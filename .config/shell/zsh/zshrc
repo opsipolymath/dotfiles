@@ -1,0 +1,28 @@
+#!/usr/bin/zsh
+
+# ${XDG_CONFIG_HOME}/shell/zsh/zshrc
+#
+# Main rc file for zsh shells
+# Loaded only for interactice shells
+
+# Report errors if glob doesn't match anything
+setopt nomatch
+
+# Notify of job completion immediately
+setopt notify
+
+# Disable audible bell
+unsetopt beep
+
+# Make traversing directories easier
+export DIRSTACKSIZE=12
+setopt autocd autopushd pushdsilent pushdtohome
+
+# Use vi mode and shorten keyress timeout for mode changes
+bindkey -v
+export KEYTIMEOUT=10
+
+# Load zsh-specific modules
+source "${ZDOTDIR}"/completion
+source "${ZDOTDIR}"/keybinds
+source "${ZDOTDIR}"/prompt

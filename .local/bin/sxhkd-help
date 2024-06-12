@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Inspired by a post by Wallace on the blog "My Take on Tech" found at
+# https://my-take-on.tech/2020/07/03/some-tricks-for-sxhkd-and-bspwm/
+# published 3 July 2020.
+
+__AWK_PROCESS_SXHKDRC=$( cat << 'EOF'
+	# Process section header lines
+	/^# --/ {
+		if ( !($0 == "# -- General") )
+			print ""
+		print "<small>\t</small>   ",substr($0,6)
+	}
+	# Process hotkey lines
+	/^[a-z@]/ && explanation {
+		if ( !(substr($0,1,1) ~ /[a-zA-Z]/) )
+			$0=substr($0,2)
+		print "<small>",$0,"\t",explanation,"</small>"
+	}
+	# If not a header, hotkey, or explanation, unset variable
+	explanation=""
+	# Process hotkey explanation lines
+	/^#/ {
+		explanation=$0
+	}
+EOF
+)
+
+awk "${__AWK_PROCESS_SXHKDRC}" ~/.config/sxhkd/sxhkdrc |
+	column -L -t -s $'\t' |
+	rofi -theme-str 'textbox-prompt {str: "󱠃";}' \
+		-dmenu -i \
+		-p "sxhkd Help Menu" \
+		-markup-rows \
+		-theme menu 

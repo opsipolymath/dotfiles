@@ -1,0 +1,41 @@
+#!/usr/bin/bash
+
+# ${SHELL_HOME}/poweroff
+#
+# Protect against accidental reboot or poweroff when connected via ssh
+
+# Helper function when confirmation is required
+POWEROFF_CONFIRM() {
+	warning "Connected via SSH"
+	ask "${1}"
+	read -rn1 confirm
+	printf '\n'
+	if [[ "y" != "${confirm}" ]] && [[ "Y" != "${confirm}" ]]; then
+		return 1
+	fi
+	return 0
+}
+
+# If poweroff is called and connected via ssh, make sure this is intended
+poweroff() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize
+
+	[[ -z "${SSH_TTY}" ]] && /usr/bin/poweroff
+	if ! POWEROFF_CONFIRM "Really poweroff? "; then
+		msg2 "Cancelling"
+		return 0
+	fi
+	/usr/bin/poweroff
+}
+
+# If reboot is called and connected via ssh, make sure this is intended
+reboot() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize
+
+	[[ -z "${SSH_TTY}" ]] && /usr/bin/reboot
+	if ! POWEROFF_CONFIRM "Really reboot? "; then
+		msg2 "Cancelling"
+		return 0
+	fi
+	/usr/bin/reboot
+}

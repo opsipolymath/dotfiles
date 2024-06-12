@@ -1,0 +1,32 @@
+import = ["~/.config/alacritty/nord.toml", "~/.config/alacritty/keybinds.toml"]
+live_config_reload = true
+
+[bell]
+animation = "Linear"
+color = "#5E81AC"
+command = "None"
+duration = 400
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[cursor]
+unfocused_hollow = true
+
+[cursor.style]
+blinking = "Off"
+shape = "Block"
+
+[font]
+size = 11
+
+[font.normal]
+family = "JetBrains Mono Nerd Font"
+
+[scrolling]
+history = 10000
+multiplier = 3
+
+[window]
+dynamic_title = true
+opacity = 1.0

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# ${XDG_DATA_HOME/bin/scroll_spotify_status
+#
+# Scrolls spotify status within defined parameters
+
+zscroll \
+	-l 30 \
+	--delay 0.5 \
+	--scroll-padding " " \
+	--match-command "$(dirname -- "${0}")/get_spotify_status --status" \
+	--match-text "Playing" "--scroll 1" \
+	--match-text "Paused" "--scroll 0" \
+	--update-check true "$(dirname -- "${0}")/get_spotify_status" &
+wait

@@ -1,0 +1,58 @@
+#!/usr/bin/bash
+# shellcheck disable=SC1090,SC1091
+
+# ${SHELL_HOME}/shellrc
+#
+# Main configuration file for sh, bash and zsh
+
+# If not bash or zsh, do nothing
+[[ ! $0 =~ (bash|zsh) ]] && return 1
+
+# Setup directories
+source "${HOME}"/.config/user-dirs.dirs
+SHELL_HOME="${HOME}"/.config/shell
+export SHELL_HOME
+source "${SHELL_HOME}"/shellenv
+
+# Set the tab size
+tabs -4
+
+# Configure shared history
+export HISTFILE="${SHELL_HOME}"/.histfile
+export HISTSIZE=200000
+export HISTFILESIZE=200000
+export SAVEHIST=200000
+
+# Load makepkg messaging library on Arch if it exists
+[[ -f /usr/share/makepkg/util/message.sh ]] &&
+	source /usr/share/makepkg/util/message.sh
+
+# Load bash configuratio
+# NB ${BDOTDIR} should be set by /etc/bash.bashrc
+if [[ $0 =~ bash ]]; then
+	if [[ ! -d "${BDOTDIR}" ]]; then
+		error '${BDOTDIR} does not exist'
+		return
+	fi
+	source "${BDOTDIR}/bashrc"
+fi
+
+# Load zsh configuration
+# NB ${ZDOTDIR} should be set by /etc/zsh/zshenv
+if [[ $0 =~ zsh  ]]; then
+	[[ -n "${ZDOTDIR}" ]] &&
+	[[ -d "${ZDOTDIR}" ]] &&
+	source "${ZDOTDIR}"/zshrc
+fi
+
+# Load mandatory configurations
+source "${SHELL_HOME}"/aliases
+source "${SHELL_HOME}"/audio
+source "${SHELL_HOME}"/bifrost
+source "${SHELL_HOME}"/dotfiles
+source "${SHELL_HOME}"/gpg
+source "${SHELL_HOME}"/poweroff
+source "${SHELL_HOME}"/private
+source "${SHELL_HOME}"/tmux
+source "${SHELL_HOME}"/update
+source "${SHELL_HOME}"/yubikey

@@ -1,0 +1,165 @@
+#!/usr/bin/bash
+
+# {SHELL_HOME}/audio
+#
+# Functions related to audio applications
+
+# A simple alarm using 'mpg123' and the 'z' queue for 'at'
+setalarm() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	# Make sure the alarm command is correctly setup
+	if [[ "/usr/bin/mpg123" != "$(readlink -f "$(which alarm)")" ]]; then
+		if [[ ! -f /usr/bin/mpg123 ]]; then
+			error "mpg123 isn't installed"
+			return 1
+		fi
+		if [[ -f "${HOME}"/.local/bin/alarm ]]; then
+			error ".local/bin/alarm exists but doesn't link to mpg123"
+			return 1
+		fi
+		ask "alarm not configured, setting it up now..."
+		mkdir -p "${HOME}"/.local/bin
+		ln -s /usr/bin/mpg123 "${HOME}"/.local/bin/alarm
+		plain "Done"
+	fi
+
+	# Needs at least 1 argument
+	if (( $# < 1 )); then
+		error "Insufficient arguments"
+		plainerr "Usage:"
+		plainerr "\tsetalarm time [file]"
+		plainerr "Example:"
+		plainerr "\tsetalarm 12:00 alarm.mp3"
+		plainerr "Or use the default alarm:"
+		plainerr "\tsetalarm 12:00"
+		plainerr "List all alarms:"
+		plainerr "\tsetalarm ls"
+		plainerr "or:"
+		plainerr "\tsetalarm list"
+		plainerr "Cancel alarm by job number:"
+		plainerr "\tsetalarm c[ancel] x"
+		plainerr "Cancel alarm by time:"
+		plainerr "\tsetalarm c[ancel] xx:xx"
+		plainerr "Cancel all alarms:"
+		plainerr "\tsetalarm cancel all"
+		plainerr "Kill all playing alarms with:"
+		plainerr "\tkillalarm"
+		return 1
+	fi
+
+	if [[ "ls" == "${1}" ]] || [[ "list" == "${1}" ]]; then
+		while read -r alarm; do
+			alarmnum="$(echo "${alarm}" | cut -d$'\t' -f1)"
+			alarmtime="$(echo "${alarm}" | cut -d' ' -f5 | cut -d: -f1,2)"
+			msg "Alarm ${alarmnum} at ${alarmtime}"
+		done <<< "$(atq -q z)"
+		return 0
+	fi
+
+	if [[ "cancel" == "${1}" ]] || [[ "c" == "${1}" ]]; then
+		# Cancel all alarms
+		if (( $# == 1 )); then
+			while read -r alarm; do
+				alarmnum="$(echo "${alarm}" | cut -d$'\t' -f1)"
+				alarmtime="$(echo "${alarm}" | cut -d' ' -f5 | cut -d: -f1,2)"
+				atrm "${alarmnum}"
+				msg "Alarm ${alarmnum} at ${alarmtime} cancelled"
+			done <<< "$(atq -q z)"
+			return 0
+		fi
+		# Verify only one alarm is being cancelled
+		if (( $# > 2 )); then
+			error "Use 'setalarm c' to cancel all alarms, or cancel 1 at a time"
+			return 1
+		fi
+		# Check if job number was specified
+		if [[ "${2}" =~ ^[0-9]+$ ]]; then
+			alarmnum="${2}"
+			alarmtime="$(atq "${2}" | cut -d$' ' -f5 | cut -d':' -f1,2)"
+			if [[ -z "${alarmtime}" ]]; then
+				error "No alarm exists with job number ${2}"
+				return 1
+			fi
+		fi
+		# Check if job time was specified
+		if [[ "${2}" =~ ^[0-9][0-9]:[0-9][0-9]$ ]]; then
+			alarmjob="$( grep "${2}" <<< "$(atq -q z)")"
+			numalarms="$(echo "${alarmjob}" | wc -l)"
+			if (( numalarms > 1 )); then
+				error "Multiple alarms detected with that time"
+				return 1
+			fi
+			printf "Alarm job: %s\n" "${alarmjob}"
+			alarmnum="$(echo "${alarmjob}" | cut -d$'\t' -f1)"
+			alarmtime="${2}"
+		fi
+		# If no alarm number has been set, there was a problem
+		if [[ -z "${alarmnum}" ]]; then
+			error "No alarm detected to cancel"
+			return 1
+		fi
+		# Cancel the alarm
+		if atrm "${alarmnum}" &>/dev/null; then
+			msg "Alarm ${alarmnum} at ${alarmtime} cancelled"
+			return 0
+		fi
+		error "Failed cancelling alarm ${alarmnum} at ${alarmtime}"
+		return 1
+	fi
+
+	# Verify the alarm time
+	if [[ ! "$1" =~ ^[0-9][0-9]:[0-9][0-9]$ ]]; then
+		error "First argument must be a time as xx:xx"
+		return 1
+	fi
+
+	# If no alarm file passed, check for default alarm file
+	if (( $# == 1 )); then
+		if [[ ! -f "${XDG_DATA_HOME}"/.alarm.mp3 ]]; then
+			error "No default alarm at ${XDG_DATA_HOME:${#HOME}}/.alarm.mp3"
+			plainerr "Alarm file can be specified as 2nd argument"
+			return 1
+		fi
+		alarmfile="${XDG_DATA_HOME}"/.alarm.mp3
+	fi
+
+	# Verify passed alarm file
+	if (( $# > 1 )); then
+		if [ ! -f "${2}" ]; then
+			error "Specified file doesn't exist: ${2}"
+			return 1
+		fi
+		alarmfile="$2"
+	fi
+
+	# Set the alarm
+	if ! echo "alarm \"${alarmfile}\"" | at -q z "${1}" &>/dev/null; then
+		error "Unable to set alarm"
+		return 1
+	fi
+	plain "Alarm set"
+	return 0
+}
+
+# Kills any currently playing alarms
+alias killalarm="killall alarm"
+
+# Override ncmpcpp to provide a more robust layout
+ncmpcpp() {
+	# Store existin layout
+	NCMP_LAYOUT="$(bsp-layout get)"
+	# Set to wide layout and launch cava
+	bsp-layout set wide &>/dev/null
+	sleep 0.5
+	( /usr/bin/alacritty -e cava & )
+	sleep 0.5
+	# Switch back to previous node and launch ncmpcpp
+	bspc node -f prev.local.!hidden.window
+	/usr/bin/ncmpcpp -q "$@"
+
+	# On shutdown, kill cava and restore original layout
+	/usr/bin/killall cava &>/dev/null
+	bsp-layout set "${NCMP_LAYOUT}" &>/dev/null
+}
+alias nc="ncmpcpp"

@@ -1,0 +1,133 @@
+#!/usr/bin/bash
+# shellcheck disable=SC2016
+
+# ${BASHDOTDIR}/prompt
+#
+# Sets the bash prompt
+
+# Prompts will be colorized if using arch and the following file is sourced:
+#   /usr/share/makepkg/util/message.sh
+# Note that various functions are needed to trigger string re-evaluation
+
+# Colorize if outputting to console
+[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+# Global variables used in prompts
+PROMPT_TOPEN="$(printf "%s┌[" "\[${BLUE}\]")"
+PROMPT_BOPEN="$(printf "%s└[" "\[${BLUE}\]")"
+PROMPT_SPLIT="$(printf "%s]─[" "${BLUE}")"
+PROMPT_CLOSE="$(printf "%s]%s" "\[${BLUE}\]" "\[${ALL_OFF}\]")"
+PROMPT_INDENT="····················"
+export PROMPT_TOPEN PROMPT_BOPEN PROMPT_SPLIT PROMPT_CLOSE PROMPT_INDENT
+
+# Display PWD in green if writable, red if not
+PROMPT_DIR() {
+	[[ ! -w "$PWD" ]] && printf '%s' "${RED}" && return
+	printf '%s' "${GREEN}"
+}
+
+# Display number of commits ahead/behind and status for git repos
+PROMPT_GIT_CHANGES() {
+	local G_AHEAD G_BEHIND G_CHANGES
+	G_AHEAD="$(git_cmd rev-list --count "@{u}..HEAD" 2>/dev/null)"
+	G_BEHIND="$(git_cmd rev-list --count "HEAD..@{u}" 2>/dev/null)"
+	if (( G_AHEAD > 0 )) || (( G_BEHIND > 0 )); then
+		printf '%s' "${PROMPT_SPLIT}"
+		(( G_AHEAD )) &&
+			printf '%s%s' "${GREEN}" "${G_AHEAD}"
+		(( G_BEHIND )) &&
+			printf '%s%s' "${RED}" "${G_BEHIND}"
+	fi
+	G_CHANGES="$(git_cmd status --porcelain=v1 2>/dev/null | wc -l)"
+	printf '%s' "${PROMPT_SPLIT}"
+	if (( G_CHANGES > 0 )); then
+		if [[ "${TERM}" == "linux" ]]; then
+			printf '%sunclean%s' "${RED}" "${ALL_OFF}"
+		else
+			printf '%s%sclean%s' "${RED}" $'\e[9m' "${ALL_OFF}"
+		fi
+	else
+		printf '%sclean%s' "${GREEN}" "${ALL_OFF}"
+	fi
+}
+
+# DIsplay git data if in a git repo or a dotfiles-tracked directory
+PROMPT_GIT() {
+	if git status &>/dev/null; then
+		alias git_cmd="/usr/bin/git"
+	else
+		[[ "${PWD}" != "${HOME}" ]] &&
+			[[ ! "${PWD}" =~ ^"${HOME}/.config" ]] &&
+			[[ ! "${PWD}" =~ ^"${HOME}/.cache" ]] &&
+			[[ ! "${PWD}" =~ ^"${HOME}/.local" ]] &&
+			return 1
+		alias git_cmd='dotfiles'
+		printf '%s%sdotfiles' "${PROMPT_SPLIT}" "${YELLOW}"
+	fi
+	PROMPT_GIT_CHANGES
+}
+
+# Return the username portion of the prompt string
+PROMPT_USER() {
+	(( EUID == 0 )) &&
+		printf '\[%s\]%s\[%s\]' "${RED}" "odin" "${GREEN}" &&
+		return
+	printf '\[%s\]%s' "${GREEN}" "\u"
+}
+
+# Return the host portion of the prompt string
+PROMPT_HOST() {
+	if [[ -z "$SSH_TTY" ]]; then
+		printf "%s" "$(hostname)"
+		return
+	fi
+	PROMPT_HNAME="$(hostname)"
+	COLOURS="132465"
+	for (( i=0; i<${#PROMPT_HNAME}; i++ )); do
+		printf '%s' "$(tput setaf ${COLOURS:$(( i % ${#COLOURS} )):1})"
+		printf '%s' "${PROMPT_HNAME:$i:1}"
+	done
+}
+
+# Return the end portion of the prompt string
+PROMPT_END() {
+	(( EUID == 0 )) &&
+		printf ' \[%s\]\$ \[%s\]' "${RED}" "${ALL_OFF}" &&
+		return
+	printf ' \[%s\]\$ \[%s\]' "${BLUE}" "${ALL_OFF}"
+}
+
+# Primary prompt string
+PS1="${PROMPT_TOPEN}\$(PROMPT_DIR)\w\$(PROMPT_GIT)${PROMPT_CLOSE}
+${PROMPT_BOPEN}$(PROMPT_USER)@$(PROMPT_HOST)${PROMPT_CLOSE}$(PROMPT_END)"
+export PS1
+
+# Secondary prompt string
+export PS2="\[${YELLOW}\]»···\[${BLUE}\]> "
+
+# Selection prompt string
+export PS3="${BLUE}Make a selection: ${ALL_OFF}"
+
+# Debug prompt strings
+PROMPT_DEBUG() {
+	printf '%s' "${YELLOW}"
+	printf '${PROMPT_INDENT:0:$((2*(BASH_SUBSHELL+1)))}['
+	printf '%s' "${BLUE}"
+	if [[ "linux" == "${TERM}" ]]; then
+		printf '${BASH_SOURCE}-'
+		printf '${FUNCNAME[0]:+${FUNCNAME[0]}()-}'
+		printf '${LINENO}'
+	else
+		printf ' ${BASH_SOURCE}·'
+		printf '${FUNCNAME[0]:+󰡱 ${FUNCNAME[0]}·}'
+		printf ' ${LINENO}'
+	fi
+	printf '%s] ' "${YELLOW}"
+	if (( EUID == 0 )); then
+		printf '%s# %s' "${RED}" "${ALL_OFF}"
+	else
+		printf '%s$ %s' "${BLUE}" "${ALL_OFF}"
+	fi
+}
+PS4="$(PROMPT_DEBUG)"
+export PS4

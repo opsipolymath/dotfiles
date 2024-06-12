@@ -1,0 +1,60 @@
+#!/usr/bin/bash
+
+# {SHELL_HOME}/bifrost
+#
+# Colorful, fun way to call ssh; no useful purpose
+
+bifrost () {
+	# Call Heimdallr
+	tput civis
+	tput sc
+	tput setaf 3
+	printf "   Heimdallr! Open the Bifröst!"
+	tput sgr0
+	sleep 0.7
+	tput rc
+	tput el
+
+	# Display an error if no target is given
+	if (( $# < 1 )); then
+		tput setaf 1
+		printf "   You have to tell me where you're going!"
+		tput sgr0
+		sleep 0.7
+		tput rc; tput el
+		return 1
+	fi
+
+	# Display the bifröst
+	for color in 1 214 3 2 4 6 5; do
+		tput setaf "${color}"
+		for (( i=0; i<4; i++ )); do
+			printf "≡"
+			sleep 0.03s
+		done
+	done
+	sleep 0.7
+	# Retract the bifrost
+	for ((i=28; i>0; i-- )); do
+		tput cub 1
+		tput el
+		sleep 0.01s
+	done
+	tput sgr0
+
+	# Update tty for password entry
+	echo UPDATESTARTUPTTY | gpg-connect-agent &>/dev/null
+
+	# Use custom SSH config if set
+	if [[ -n "${SSH_CONFIG}" ]]; then
+		/usr/bin/ssh -F "${SSH_CONFIG}" "$@"
+		return $?
+	fi
+
+	# Otherwise, use defaults
+	/usr/bin/ssh "$@"
+	return $?
+}
+
+# Overload ssh
+alias ssh="bifrost"

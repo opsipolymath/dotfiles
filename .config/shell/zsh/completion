@@ -1,0 +1,70 @@
+#!/usr/bin/zsh
+
+# ${ZDOTDIR}/completion
+#
+# Completion settings
+
+# Load completion module and initialize it
+autoload -Uz compinit
+compinit
+
+# -- Enable/disable options
+# List directories seperately and before files
+zstyle ':completion:*' list-dirs-first true
+# Allow the original string as a possible completion
+zstyle ':completion:*' original true
+# Update list of commands every search
+zstyle ':completion:*' rehash true
+# Expand substitutions first
+zstyle ':completion:*' substitute true
+# Insert unambiguous expansion/completion rather than use the menu if one exists
+zstyle ':completion:*' insert-unambiguous true
+# Treat '//' as if it were '/*/' rather than '/'
+zstyle ':completion:*' squeeze-slashes false
+# Group matches together
+zstyle ':completion:*:matches' group 'yes'
+
+# -- Formatting
+# Use already-configured ls colours
+zstyle ':completion:*' list-colors ${(s.:.)LS_COLORS}
+# Description to be used for options not described with exactly 1 option
+zstyle ':completion:*' auto-description 'specify: %d'
+# Format to use for description tags
+zstyle ':completion:*' format 'Completing %d'
+# Prompt to use when listing is more than one screen
+zstyle ':completion:*' list-prompt '%BAt %p: Hit TAB for more, or the character to insert%b'
+# Prompt to use when selection is more than one screen
+zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %p%s'
+
+# -- Sorting/grouping options
+# Sort files by name
+zstyle ':completion:*' file-sort name
+# Have all different types of matches groupe separately
+zstyle ':completion:*' group-name ''
+
+# -- Matching settings
+# For strings with multiple parts, expand prefix and suffix as much as possible
+zstyle ':completion:*' expand prefix suffix
+# Don't include a specified parent or the pwd in completions
+# i.e. Given '../' don't consider pwd a valid completion)
+zstyle ':completion:*' ignore-parents parent pwd
+# Only attempt case-insensitive matching if case-sensitive fails
+zstyle ':completion:*' matcher-list '' 'm:{a-zA-Z}={A-Za-z}'
+# Don't complete backup files as executables
+zstyle ':completion:*:complete:-command-::commands' ignored-patterns '*\~'
+# Use the directory stack for cd completion
+zstyle ':completion:*:*:cd:*:directory-stack' menu yes select
+
+# -- Misc completion settings
+# Completer functions to use
+zstyle ':completion:*' completer _expand _complete _ignored _correct _approximate
+# Correct a maximum of 2 errors
+zstyle ':completion:*' max-errors 2
+# Only use the completion menu if at least 2 matches are found
+zstyle ':completion:*' menu select=2
+# Keep '//' when used as a prefix
+zstyle ':completion:*' preserve-prefix '//'
+
+# Update fpath to include custom completions
+[[ -d "${ZDOTDIR}/completions" ]] &&
+	fpath=( "${ZDOTDIR}"/completions ${fpath} )

@@ -1,0 +1,368 @@
+; ${XDG_CONFIG_HOME}/polybar/config
+;
+; Polybar config file
+
+[colors]
+background   = ${xrdb:background}
+foreground   = ${xrdb:foreground}
+primary      = ${xrdb:normalColor}
+secondary    = ${xrdb:activeColor}
+active       = ${xrdb:activeColor}
+faded        = ${xrdb:fadeColor}
+dark         = ${xrdb:darkColor}
+alert        = ${xrdb:alertColor}
+blue         = ${xrdb:blue}
+green        = ${xrdb:green}
+orange       = ${xrdb:orange}
+purple       = ${xrdb:purple}
+red          = ${xrdb:red}
+yellow       = ${xrdb:yellow}
+backlight    = ${colors.active}
+battery      = ${colors.active}
+date         = ${colors.active}
+keyboard     = ${colors.active}
+music        = ${colors.active}
+network      = ${colors.active}
+volume       = ${colors.active}
+mute         = ${colors.red}
+disconnected = ${colors.red}
+transparent  = #00000000
+
+[global/wm]
+margin-top    = 5
+margin-bottom = 5
+
+[bar/default]
+width        = 100%
+height       = ${xrdb:panelHeight}
+radius       = ${xrdb:radius}
+fixed-center = false
+enable-ipc   = true
+
+background      = ${colors.background}
+foreground      = ${colors.foreground}
+border-size     = ${xrdb:gap}
+border-color    = ${colors.transparent}
+line-size       = 3
+line-color      = ${colors.active}
+tray-background = ${colors.faded}
+
+modules-left   = bspwm
+modules-center = media output
+modules-right  = wlan0 wlan1 xbacklight pulseaudio battery date
+tray-position  = right
+
+font-0 = JetBrains Mono Nerd Font:style=Regular:pixelsize=9:antialias=true;2
+font-1 = Material Design Icons:pixelsize=12:style=Regular;4
+font-2 = Junicode:style=Bold:pixelsize=12:antialias=true;3
+
+wm-restack        = bspwm
+override-redirect = true
+
+cursor-click  = pointer
+cursor-scroll = ns-resize
+
+[module/bspwm]
+type = internal/bspwm
+enable-scroll = false
+
+label-font       = 3
+label-background = ${colors.background}
+label-foreground = ${colors.foreground}
+
+label-focused            = %name%
+label-focused-background = ${colors.active}
+label-focused-foreground = ${colors.background}
+label-focused-padding    = 1
+
+label-occupied            = %name%
+label-occupied-foreground = ${colors.active}
+label-occupied-padding    = 1
+
+label-urgent            = %name%
+label-urgent-background = ${colors.alert}
+label-urgent-padding    = 1
+
+label-empty            = %name%
+label-empty-foreground = ${colors.faded}
+label-empty-padding    = 1
+
+[module/media]
+type = custom/script
+tail = true
+
+format-prefix            = "󰓇"
+format-prefix-font       = 2
+format-prefix-padding    = 1
+format-prefix-margin     = 1
+format-prefix-foreground = ${colors.background}
+format-prefix-background = ${colors.network}
+format-foreground        = ${colors.music}
+format-background        = ${colors.background}
+format                   = <label>
+exec                     = ~/.local/bin/scroll_spotify_status
+
+[module/mpd]
+type = internal/mpd
+
+icon-prev-margin-left = 1
+icon-prev  = 󰒫
+icon-stop  = 󰓛
+icon-play  = 󰐊
+icon-pause = 󰏤
+icon-next  = 󰒬
+
+format-online  = <icon-prev><toggle><icon-next><label-song>
+label-offline  = mpd is offline
+format-stopped =
+
+format-playing                   = ${self.format-online}
+format-playing-prefix            = 󰝚
+format-playing-prefix-font       = 2
+format-playing-prefix-padding    = 1
+format-playing-prefix-foreground = ${colors.background}
+format-playing-prefix-background = ${colors.keyboard}
+format-playing-foreground        = ${colors.music}
+format-playing-background        = ${colors.background}
+
+format-paused                   = ${self.format-online}
+format-paused-prefix            = 󰝚
+format-paused-prefix-font       = 2
+format-paused-prefix-padding    = 1
+format-paused-prefix-foreground = ${colors.background}
+format-paused-prefix-background = ${colors.keyboard}
+format-paused-foreground        = ${colors.music}
+format-paused-background        = ${colors.background}
+
+label-song-margin   = 1
+label-song-maxlen   = 30
+label-song-ellipsis = true
+
+[module/eth]
+type      = internal/network
+interface = enp0s31f6
+interval  = 3.0
+
+format-disconnected =
+
+format-connected                     = <label-connected>
+format-connected-prefix              = 󰈀
+format-connected-prefix-font         = 2
+format-connected-prefix-padding      = 1
+format-connected-prefix-margin-right = 1
+format-connected-prefix-foreground   = ${colors.background}
+format-connected-prefix-background   = ${colors.network}
+
+label-connected            = %local_ip%
+label-connected-foreground = ${colors.network}
+
+[module/wlan0]
+type      = internal/network
+interface = wlan0
+interval  = 3.0
+
+format-disconnected                     = <label-disconnected>
+format-disconnected-prefix              = 󰤭
+format-disconnected-prefix-font         = 2
+format-disconnected-prefix-padding      = 1
+format-disconnected-prefix-margin-right = 0
+format-disconnected-prefix-foreground   = ${colors.background}
+format-disconnected-prefix-background   = ${colors.disconnected}
+
+label-disconnected            = %ifname%
+label-disconnected-foreground = ${colors.disconnected}
+label-disconnected-margin     = 1
+
+format-connected         = <ramp-signal><label-connected>
+ramp-signal-0            = 󰤯0
+ramp-signal-1            = 󰤟0
+ramp-signal-2            = 󰤢0
+ramp-signal-3            = 󰤥0
+ramp-signal-4            = 󰤨0
+ramp-signal-foreground   = ${colors.background}
+ramp-signal-background   = ${colors.network}
+ramp-signal-font         = 2
+ramp-signal-padding      = 1
+ramp-signal-margin-right = 0
+
+label-connected            = %essid%
+label-connected-foreground = ${colors.network}
+label-connected-margin     = 1
+
+[module/wlan1]
+type      = internal/network
+interface = wlan1
+interval  = 3.0
+
+format-disconnected                     = <label-disconnected>
+format-disconnected-prefix              = 󰤭
+format-disconnected-prefix-font         = 2
+format-disconnected-prefix-padding      = 1
+format-disconnected-prefix-margin-right = 0
+format-disconnected-prefix-foreground   = ${colors.background}
+format-disconnected-prefix-background   = ${colors.disconnected}
+
+label-disconnected            = %ifname%
+label-disconnected-foreground = ${colors.disconnected}
+label-disconnected-margin     = 1
+
+format-connected         = <ramp-signal><label-connected>
+ramp-signal-0            = 󰤯1
+ramp-signal-1            = 󰤟1
+ramp-signal-2            = 󰤢1
+ramp-signal-3            = 󰤥1
+ramp-signal-4            = 󰤨1
+ramp-signal-foreground   = ${colors.background}
+ramp-signal-background   = ${colors.network}
+ramp-signal-font         = 2
+ramp-signal-padding      = 1
+ramp-signal-margin-right = 0
+
+label-connected            = %essid%
+#label-connected            = %ifname% | %essid%
+label-connected-foreground = ${colors.network}
+label-connected-margin     = 1
+
+[module/xbacklight]
+type = internal/backlight
+card = intel_backlight
+enable-scroll = true
+
+format                     = <label>
+format-prefix              = 󱎖
+format-prefix-font         = 2
+format-prefix-padding      = 1
+format-prefix-margin-right = 0
+format-prefix-foreground   = ${colors.background}
+format-prefix-background   = ${colors.backlight}
+
+label-foreground = ${colors.backlight}
+label-background = ${colors.background}
+label-margin     = 1
+
+[module/output]
+type = custom/script
+tail = true
+
+format-font       = 2
+format-margin     = 1
+format-foreground = ${colors.backlight}
+format-background = ${colors.background}
+format            = <label>
+exec              = ~/.local/bin/get_audio_output
+
+[module/pulseaudio]
+type = internal/pulseaudio
+
+format-muted                     = <label-muted>
+format-muted-prefix              = 󰝟
+format-muted-prefix-font         = 2
+format-muted-prefix-padding      = 1
+format-muted-prefix-margin-right = 0
+format-muted-prefix-foreground   = ${colors.background}
+format-muted-prefix-background   = ${colors.mute}
+
+label-muted              = %percentage%%
+label-muted-foreground   = ${colors.mute}
+label-muted-margin       = 1
+
+format-volume                     = <label-volume>
+format-volume-prefix              = 󱄠
+format-volume-prefix-font         = 2
+format-volume-prefix-padding      = 1
+format-volume-prefix-margin       = 0
+format-volume-prefix-foreground   = ${colors.background}
+format-volume-prefix-background   = ${colors.volume}
+
+label-volume              = %percentage%%
+label-volume-foreground   = ${colors.volume}
+label-volume-margin       = 1
+
+[module/battery]
+type    = internal/battery
+battery = BAT0
+adapter = AC
+full-at = 95
+
+format-full                     = <label-full>
+format-full-prefix              = 󰁹
+format-full-prefix-font         = 2
+format-full-prefix-padding      = 1
+format-full-prefix-margin-right = 0
+format-full-prefix-foreground   = ${colors.background}
+format-full-prefix-background   = ${colors.green}
+
+label-full            = %percentage%%
+label-full-foreground = ${colors.green}
+label-full-margin     = 1
+
+format-charging                 = <animation-charging><label-charging>
+animation-charging-0            = 󰂆
+animation-charging-1            = 󰂇
+animation-charging-2            = 󰂈
+animation-charging-3            = 󰂉
+animation-charging-4            = 󰂊
+animation-charging-5            = 󰂋
+animation-charging-6            = 󰂅
+animation-charging-font         = 2
+animation-charging-padding      = 1
+animation-charging-margin-right = 0
+animation-charging-foreground   = ${colors.background}
+animation-charging-background   = ${colors.battery}
+animation-charging-framerate    = 1000
+
+label-charging            = %percentage%%
+label-charging-foreground = ${colors.battery}
+label-charging-margin     = 1
+
+format-discharging            = <ramp-capacity><label-discharging>
+format-discharging-foreground = ${colors.battery}
+
+ramp-capacity-0 = 󰁺
+ramp-capacity-1 = 󰁻
+ramp-capacity-2 = 󰁼
+ramp-capacity-3 = 󰁽
+ramp-capacity-4 = 󰁾
+ramp-capacity-5 = 󰁿
+ramp-capacity-6 = 󰂀
+ramp-capacity-7 = 󰂁
+ramp-capacity-8 = 󰂂
+ramp-capacity-0-background = ${colors.red}
+ramp-capacity-1-background = ${colors.red}
+ramp-capacity-2-background = ${colors.orange}
+ramp-capacity-3-background = ${colors.yellow}
+ramp-capacity-4-background = ${colors.battery}
+ramp-capacity-5-background = ${colors.battery}
+ramp-capacity-6-background = ${colors.battery}
+ramp-capacity-7-background = ${colors.battery}
+ramp-capacity-8-background = ${colors.battery}
+ramp-capacity-foreground   = ${colors.background}
+ramp-capacity-padding      = 1
+ramp-capacity-margin-right = 0
+
+label-discharging            = %percentage%%
+label-discharging-foreground = ${colors.battery}
+label-discharging-margin     = 1
+
+[module/date]
+type     = internal/date
+interval = 5
+
+date     =
+date-alt = "%d %b %Y"
+time     = %H:%M
+time-alt =
+
+format                     = <label>
+format-prefix              = 󰨲
+format-prefix-font         = 2
+format-prefix-padding      = 1
+format-prefix-margin-right = 0
+format-prefix-foreground   = ${colors.background}
+format-prefix-background   = ${colors.date}
+
+label              = %date%%time%
+label-foreground   = ${colors.date}
+label-margin       = 1
+
+; vim:ft=cfg

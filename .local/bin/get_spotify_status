@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# ${XDG_DATA_HOME}/bin/get_spotify_status
+#
+# Outputs spotfiy's status and/or playing song's metadata
+
+# Set environment variables
+__format="{{ artist }} - {{ title }}"
+__parent_bar="default"
+__parent_bar_pid=$(pgrep -a "polybar" | grep "${__parent_bar}" | cut -d" " -f1)
+
+# Get spotify status and exit code
+__spotify_status=$(playerctl --player="spotify" status 2>/dev/null)
+__exit_code=$?
+
+# If no player is running, try to restart playerctl
+if [ ! "${__exit_code}" -eq 0 ]; then
+	killall playerctld
+	playerctld daemon
+	__spotify_status=$(playerctl --player="spotify" status 2>/dev/null)
+	__exit_code=$?
+	if [ ! "${__exit_code}" -eq 0 ]; then
+		echo "No music is currently playing"
+		exit
+	fi
+fi
+
+# If status only is queries, return that
+if [ "${1}" = "--status" ]; then
+    echo "${__spotify_status}"
+    exit
+fi
+
+# If stopped, indicate that
+if [ "${__spotify_status}" = "Stopped" ]; then
+    echo "No music is currently playing"
+    exit
+fi
+
+# Output playing media properly formatted
+printf '%30s' "$(printf "$(playerctl --player="spotify" metadata --format "${__format}")")"

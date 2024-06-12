@@ -1,0 +1,193 @@
+{
+	"reload_style_on_change": true,
+	"margin": 8,
+	"height": 34,
+	"fixed-center": false,
+	"modules-left": [
+		"hyprland/workspaces"
+	],
+	"modules-center": [
+		"custom/spotify#icon",
+		"custom/spotify",
+		"custom/spotify#time"
+	],
+	"modules-right": [
+		"network#icon",
+		"network#status",
+		"pulseaudio#icon",
+		"pulseaudio#source",
+		"pulseaudio#volume",
+		"temperature#icon",
+		"temperature",
+		"backlight#icon",
+		"backlight",
+		"battery#icon",
+		"battery",
+		"clock#icon",
+		"clock",
+		"privacy",
+		"tray"
+	],
+	"hyprland/workspaces": {
+		"format": "<span font_desc='Junicode bold 13'>{icon}</span>",
+		"format-icons": {
+			"1": "ᚠ",
+			"2": "ᚢ",
+			"3": "ᚦ",
+			"4": "ᚩ",
+			"5": "ᚱ",
+			"6": "ᚳ",
+			"7": "ᚷ",
+			"8": "ᚹ",
+			"9": "ᚻ"
+		},
+		"persistent-workspaces": {
+			"eDP-1": 9
+		}
+	},
+	"custom/spotify#icon": {
+		"format": ""
+	},
+	"custom/spotify": {
+		"escape": "true",
+		"exec": "${HOME}/.local/bin/scroll_spotify_status",
+		"format": "{}",
+		"max-length": 30,
+		"min-length": 30
+	},
+	"custom/spotify#time": {
+		"exec": "${HOME}/.local/bin/get_spotify_time",
+		"format": "{}"
+	},
+	"network#icon": {
+		"format-wifi": "",
+		"format-ehternet": "󰈀",
+		"format-linked": "󰲛",
+		"format-disconnected": "󰖪",
+		"on-click": "iwgtk"
+	},
+	"network#status": {
+		"format-wifi": "{essid}",
+		"format-ethernet": "{ipaddr}/{cidr}",
+		"tooltip-format-wifi": "{ifname} ({signalStrength}) via {gwaddr}",
+		"tooltip-format-ethernet": " {ifname} via {gwaddr}",
+		"format-linked": "{ifname} (No IP)",
+		"format-disconnected": "Disconnected",
+		"on-click": "iwgtk"
+	},
+	"pulseaudio#icon": {
+		"format": "{icon}",
+		"format-bluetooth": "{icon}󰂯",
+		"format-bluetooth-muted": "󰖁󰂯",
+		"format-muted": "󰖁",
+		"format-icons": {
+			"headphone": "",
+			"hands-free": "",
+			"headset": "",
+			"phone": "",
+			"portable": "",
+			"car": "",
+			"default": ["󰕾"]
+		},
+		"on-click": "pactl set-sink-mute @DEFAULT_SINK@ toggle"
+	},
+	"pulseaudio#source": {
+		"format": "{format_source}",
+		"format-source": "",
+		"format-source-muted": "",
+		"on-click": "pactl set-source-mute @DEFAULT_SOURCE@ toggle"
+	},
+	"pulseaudio#volume": {
+		"format": "{volume}%",
+		"on-click": "pavucontrol -t 3"
+	},
+	"temperature#icon": {
+		"critical-threshold": 80,
+		"format": "{icon}",
+		"format-icons": ["", "", "", "", ""]
+	},
+	"temperature": {
+		"critical-threshold": 80,
+		"format": "{temperatureC}°C"
+	},
+	"backlight#icon": {
+		"format": "󰃟"
+	},
+	"backlight": {
+		"format": "{percent}%"
+	},
+	"battery#icon": {
+		"interval": 10,
+		"states": {
+			"low": 50,
+			"warning": 30,
+			"critical": 15
+		},
+		"format": "{icon}",
+		"format-full": "󰁹󱐋",
+		"format-charging": "{icon}󱐋",
+		"format-plugged": "{icon}󱐋",
+		"format-icons": ["󰂎", "󰁻", "󰁽", "󰁿", "󰂁"]
+	},
+	"battery": {
+		"interval": 10,
+		"states": {
+			"low": 50,
+			"warning": 30,
+			"critical": 15
+		},
+		"format": "{capacity}%",
+		"format-full": "{capacity}%",
+		"format-charging": "{capacity}%",
+		"format-plugged": "{capacity}%",
+		"format-alt": "{time} {capacity}%"
+	},
+	"clock#icon": {
+		"format": "󰃰"
+	},
+	"clock": {
+		"timezone": "America/Toronto",
+		"format-alt": "{:%d %b %Y}",
+		"tooltip-format": "<tt>{calendar}</tt>",
+		"calendar": {
+			"mode"          : "month",
+			"mode-mon-col"  : 3,
+			"weeks-pos"     : "",
+			"on-scroll"     : 1,
+			"format": {
+				"months":     "<span color='#B48EAD'><b>{}</b></span>",
+				"days":       "<span color='#5E81AC'><b>{}</b></span>",
+				"weekdays":   "<span color='#D8DEE9'><b>{}</b></span>",
+				"today":      "<span color='#A3BE8C'><b>{}</b></span>"
+			}
+		},
+		"actions":  {
+			"on-click-right": "mode"
+		}
+	},
+	"privacy": {
+		"icon-spacing": 4,
+		"icon-size": 13,
+		"transition-duration": 250,
+		"modules": [
+			{
+				"type": "screenshare",
+				"tooltip": true,
+				"tooltip-icon-size": 24
+			},
+			{
+				"type": "audio-out",
+				"tooltip": true,
+				"tooltip-icon-size": 24
+			},
+			{
+				"type": "audio-in",
+				"tooltip": true,
+				"tooltip-icon-size": 24
+			}
+		]
+	},
+	"tray": {
+		"spacing": 10
+	}
+}

@@ -1,0 +1,234 @@
+#!/usr/bin/bash
+
+# ${SHELL_HOME}/private
+#
+# Functions for a directory of private data encrypted for storage on git
+# NB Relies on utilities from makepkg so may not work if not using Arch
+# Capitalized functions/variables sould be considered private and not used
+#    directly; use the main function `pvt` for all uses unless you know what
+#    you're doing.
+
+# Displays related help text
+PVT_USAGE() {
+	printf "pvt - Manage private data encrypted for git\n\n"
+	printf "Usage: pvt [command]\n\n"
+	printf "Notes:\n"
+
+	printf "Commands:\n"
+	printf "  help    Displays this text\n"
+	printf "  clean   Removes all existing data\n"
+	printf "  setup   Complete intitial setup\n"
+	printf "  pull    Grabs most recent data from git and decrypts it\n"
+	printf "  push    Encrupts local data and pushes it to git\n\n"
+	printf "  status  Displays the current status\n"
+}
+
+# Use argument as prompt, return true if user answers 'y' false otherwise
+PVT_CONFIRM() {
+	ask "${1}"
+	read -rn1 confirm
+	printf "\n"
+	if [[ "y" == "${confirm}" ]] || [[ "Y" == "${confirm}" ]]; then
+		unset confirm
+		return 0
+	fi
+	unset confirm
+	msg2 "Skipping"
+	return 1
+}
+
+# Removes all related data and directories
+# NB rm is used instead of shred as many filesystems don't respect shred
+# Exit code will be:
+#    1 or 2 if a directory couldn't be removed but user tried
+#    4 or more if a user didn't confirm at least 1 removal
+PVT_CLEAN() {
+	PVT_CLEAN_RM_DIR() {
+		if [[ ! -d "${1}" ]]; then
+			warning "Private directory ~${1:${#HOME}} doesn't exist"
+			return 0
+		fi
+		if ! PVT_CONFIRM "Remove ~${1:${#HOME}}? "; then
+			return 4
+		fi
+		if ! rm -rf "${1}"; then
+			error "Failed removing private directory ~${1:${#HOME}}"
+			return 1
+		fi
+		return 0
+	}
+	msg "Cleaning up..."
+	local EXIT_CODE=0
+	PVT_CLEAN_RM_DIR "${PVT_DIR}"
+	EXIT_CODE=$(( EXIT_CODE + $? ))
+	PVT_CLEAN_RM_DIR "${ENC_DIR}"
+	EXIT_CODE=$(( EXIT_CODE + $? ))
+	(( EXIT_CODE > 0 )) && return 1
+	return 0
+}
+
+# Decrypts the local encrypted file
+PVT_DECRYPT() {
+	msg "Decrypting data..."
+	if gpg -d "${ENC_FILE}" 2>/dev/null | tar -C "${PVT_DIR}" -xz &>/dev/null; then
+		return 0
+	fi
+	error "Failed to decrypt/extract data"
+	return 1
+}
+
+# Performs initial setup; requires related directories to not exist
+# NB No need to check if repo is cloned as the directories cannot exist
+PVT_SETUP() {
+	msg "Checking repo status..."
+	local EXIT_CODE=0
+	if [[ -d "${PVT_DIR}" ]]; then
+		error "Directory ~${PVT_DIR:${#HOME}} already exists"
+		EXIT_CODE=1
+	fi
+	if [[ -d "${ENC_DIR}" ]]; then
+		error "Directory ~${ENC_DIR:${#HOME}} already exists"
+		EXIT_CODE=1
+	fi
+	if (( EXIT_CODE > 0 )); then
+		plainerr "Did you mean to run 'pvt clean' first?"
+		return 1
+	fi
+	msg "Cloning private git repo..."
+	if ! pvt_git clone "${PVT_REPO}" "${ENC_DIR}"; then
+		error "Failed"
+		PVT_CLEAN
+		return 1
+	fi
+	mkdir -p "${PVT_DIR}"
+	PVT_DECRYPT && return 0
+	PVT_CLEAN && return 2
+	return 1
+}
+
+# Returns status of the repo: 0 if all directories exist and repo is clone,
+#    1 if either directory doesn't exist, 2 if the repo isn't cloned, and 3 if
+#    the local repo is ahead or behind the remote
+PVT_STATUS() {
+	msg "Checking repo status..."
+	local EXIT_CODE=0
+	if [[ ! -d "${PVT_DIR}" ]]; then
+		error "Directory ~${PVT_DIR:${#HOME}} doesn't exist"
+		EXIT_CODE=1
+	fi
+	if [[ ! -d "${ENC_DIR}" ]]; then
+		error "Directory ~${ENC_DIR:${#HOME}} doesn't exist"
+		EXIT_CODE=1
+	fi
+	if pvt_git status &>/dev/null; then
+		error "Repo doesn't exist"
+		EXIT_CODE=2
+	fi
+	if (( EXIT_CODE > 0 )); then
+		plainerr "Did you mean to run 'pvt setup' first?"
+		return ${EXIT_CODE}
+	fi
+	msg2 "Repo properly configured"
+	msg "Checking for differences with remote..."
+	if [[ "$(pvt_git diff origin/main 2>/dev/null)" == "" ]]; then
+		msg2 "No differences"
+		return 0
+	fi
+	msg2 "Differences exist"
+	return 3
+}
+
+# Pull remote changes if they exist and decrypt them
+PVT_PULL() {
+	PVT_STATUS
+	retval=$?
+	# 1 and 2 mean directories o repo aren't configured
+	(( retval == 1 )) || (( retval == 2 )) && return 1
+	# 0 means there are no changes on remote
+	(( retval == 0 )) && return 0
+	msg "Pulling changes..."
+	if ! pvt_git pull &>/dev/null; then
+		error "Failed pulling changes"
+		return 1
+	fi
+	PVT_DECRYPT && return 0
+	return 1
+}
+
+# Encrypt local data and push it to remote
+# Reutrn 0 if there are no errors, 1 if the repo isn't setup or there are
+#    unpulled changes, 2 if encryption failed, and 3 if an error occured while
+#    attempting to push to remote
+PVT_PUSH() {
+	PVT_STATUS || return 1
+	msg "Encrypting and pushing changes with gpg and git..."
+	if ! tar -czC "${PVT_DIR}" . | gpg -er "${PVT_KEY}" > "${ENC_FILE}"; then
+		error "Failed encrypting data"
+		return 2
+	fi
+	pvt_git add "${ENC_FILE}" &>/dev/null
+	COMMIT_MSG="$(date +%Y%m%d%H%M)-$(hostname)"
+	local COMMIT_MSG
+	pvt_git commit -m "${COMMIT_MSG}" &>/dev/null
+	if ! pvt_git push &>/dev/null; then
+		error "Failed pushing changes with git"
+		return 3
+	fi
+	return 0
+}
+
+pvt() {
+	# Environment variables and default options if not already set
+	if [[ -z "${PVT_REPO}" ]]; then
+		PVT_REPO="git@github.com:opsipolymath/private"
+		PVT_KEY="87D403D9"
+		PVT_DIR="${HOME}/.private"
+		ENC_DIR="${HOME}/.encrypted"
+		[[ -n ${XDG_CACHE_HOME} ]] &&
+			ENC_DIR="${XDG_CACHE_HOME}/encrypted"
+		ENC_FILE="${ENC_DIR}/private.tgz.gpg"
+		readonly PVT_REPO PVT_KEY PVT_DIR ENC_DIR ENC_FILE
+	fi
+
+	alias pvt_git='git --git-dir="${ENC_DIR}" --work-tree="${ENC_DIR}"'
+
+	# Only colorize if outputting to console
+	[[ -t 1 ]] && [[ -t 2 ]] && [[ -z "${ALL_OFF}" ]] && colorize &>/dev/null
+
+	if (( $# != 1 )); then
+		PVT_USAGE
+		return
+	fi
+
+	case "${1}" in
+		help)
+			PVT_USAGE
+			return 0
+			;;
+		clean)
+			PVT_CLEAN
+			return $?
+			;;
+		setup)
+			PVT_SETUP
+			return $?
+			;;
+		pull)
+			PVT_PULL
+			return $?
+			;;
+		push)
+			PVT_PUSH
+			return $?
+			;;
+		status)
+			PVT_STATUS
+			return $?
+			;;
+		*)
+			error "Invalid command"
+			PVT_USAGE
+			return 10
+			;;
+	esac
+}

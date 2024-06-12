@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+
+# ${BASHDOTDIR}/keybinds
+#
+# Bash-specific keybindings
+
+# Search throuh history for partial commands
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'

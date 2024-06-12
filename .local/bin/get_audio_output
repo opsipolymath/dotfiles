@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# ${XDG_DATA_HOME}/bin/get_audio_output
+#
+# Outputs icon for pulseaudio current selected output port
+
+# Check if using Schiit Fulla
+if pactl get-default-sink | grep -q 'Schiit\|bluez_sink'; then
+	printf '%%{R} 󰋎 '
+	exit
+fi
+
+# Check if running on headphone
+__active_port=$(
+	pactl list sinks |
+	grep -i 'active port' |
+	rev |
+	cut -d'-' -f1 |
+	rev )
+
+if [[ "${__active_port,,}" = "headphones" ]]; then
+	printf '%%{R} 󰋎 '
+	exit
+fi
+
+# No headphones connected
+printf '%%{R} 󱌈 '

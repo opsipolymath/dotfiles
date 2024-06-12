@@ -1,0 +1,225 @@
+#!/usr/bin/bash
+
+# ${SHELL_HOME}/update
+#
+# Collection of aliases and functions for package mangement
+# NB Assumes makpkg messaging utility is sourced
+
+# Cleaner defaults for trusted packages: don't inspect build files, build in
+#    a clean chroot, sign built packages with gpg, and remove old package
+#    files from disk when updating them in the local repo
+alias aursync="/usr/bin/aur sync --noview --chroot --sign --remove"
+
+# Update all packages; pass `aur` as first argument to update AUR pakages at
+#    the same time. Returns 0 on success, 0 otherwise
+update() {
+	[[ -t 1 ]] && [[ -t 2 ]] && [[ -z RED ]] && colorize &>/dev/null
+
+	if [[ "aur" == "${1}" ]]; then
+		if ! pacman -Qq aurutils &>/dev/null; then
+			error "aurutils not installed"
+			return 2
+		fi
+		! aursync -u && return 1
+	fi
+	ask "Checking for updates..."
+	UPDATES="$( checkupdates )"
+	plain "Done"
+	if [[ -z "${UPDATES}" ]]; then
+		msg "no UPDATES available"
+		return 0
+	fi
+	# Update the keyring first if required
+	if echo "${UPDATES}" | grep -q 'archlinux-keyring'; then
+		msg "Updating keyring"
+		if ! sudo pacman -Sy archlinux-keyring; then
+			error "Failed updating keyring"
+			error "Sync database updated but not packages"
+			error "System is now in unsupported partial update status"
+			error "Resolve immediately and run 'pacman -Syu'"
+			return 1
+		fi
+	fi
+	sudo pacman -Syu
+	return $?
+}
+
+# Display an erorr that aurutils isn't installed
+PKG_AURUTILS_MISSING() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	error "aurutils is not installed"
+	return 2
+}
+
+# If aurutils and repoctl aren't installed, output error and exit
+if ! pacman -Qq aurutils repoctl &>/dev/null; then
+	alias aursync="PKG_AURUTILS_MISSING"
+	alias pkgadd="PKG_AURUTILS_MISSING"
+	alias pkgdel="PKG_AURUTILS_MISSING"
+	alias pkgverify="PKG_AURUTILS_MISSING"
+	alias localdbsign="PKG_AURUTILS_MISSING"
+	alias fixlocaldb="PKG_AURUTILS_MISSING"
+	return
+fi
+
+# Gets the parametrs of the local sync repo
+PKG_GET_PARAMS() {
+	msg "Attemping to extract repo parameters..."
+	if ! REPO_PARAMS="$(aur repo)"; then
+		error "Failed"
+		return 1
+	fi
+	REPO_NAME="$(echo "${REPO_PARAMS}" | awk -F: 'FNR==1{printf $2}')"
+	REPO_ROOT="$(echo "${REPO_PARAMS}" | awk -F: 'FNR==2{printf $2}')"
+	REPO_PATH="$(echo "${REPO_PARAMS}" | awk -F: 'FNR==3{printf $2}')"
+	msg2 "Success"
+	return 0
+}
+
+# Attempts to use gpg to sign a file
+UPDATE_SIGN_FILE() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	if ! gpg --detach-sign --no-armor --batch -u "${GPGKEY}" "${1}"; then
+		error "Failed signing ${1}"
+		return 1
+	fi
+	return 0
+}
+
+# Adds a package file to the local repo, copying if required and signing the db
+# Returns 0 if everything was successful, 1 if GPGKEY isn't set, 2 if local
+#    repo parameters couldn't be determined, and 3 if package signing failed.
+pkgadd() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	if ! printenv GPGKEY &>/dev/null; then
+		error 'GPGKEY environment variable not set'
+		return 1
+	fi
+
+	PKG_GET_PARAMS || return 2
+	local PKG PKGDIR
+	for PKG in "$@"; do
+		if [[ ! -f "${PKG}".sig ]]; then
+			UPDATE_SIGN_FILE "${PKG}"
+			return 3
+		fi
+		PKGDIR="$(realpath "${PKG}")"
+		[[ "${PKGDIR}" != "${REPO_ROOT}" ]] &&
+			/usr/bin/cp -i "${PKG}" "${PKG}.sig" "${REPO_ROOT}"
+	done
+
+	repo-add --sign "${REPO_PATH}" "$@"
+}
+
+# Removes a package from the local repo, deleting the files and signing the db
+pkgdel() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	if ! printenv GPGKEY &>/dev/null; then
+		error 'GPGKEY environment variable not set'
+		return 1
+	fi
+
+	PKG_GET_PARAMS || return 1
+	repoctl remove "${REPO_PATH}" "$@" || return 1
+	aurdbsign
+	return 0
+}
+
+# Check for potentially orphaned package files
+# NOTE: '-debug' packages are owned by other packages, so they are not checked
+pkgverify() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	msg "Comparing local package files to database..."
+	NOT_INSTALLED=()
+	PKG_GET_PARAMS || return 1
+	for PKG in "${REPO_ROOT}"/*.pkg.tar.zst; do
+		PKGNAME="$(basename "${PKG}" | rev | cut -d'-' -f1,2,3 --complement | rev )"
+		[[ "${PKGNAME: -5}" == "debug" ]] && continue
+		pacman -Qq "${PKGNAME}" &>/dev/null ||
+			NOT_INSTALLED+=( "${PKGNAME}" )
+	done
+	msg2 "Done"
+
+	msg 'The following packages exist but are not installed:'
+	for PKG in "${SOMEVAR[@]}"; do
+		msg2 "${PKG}"
+	done
+	(( ${#NOT_INSTALLED[@]} > 0 )) && return 1
+	msg2 'No superfluous packages exist in the local repository'
+	return 0
+}
+
+# Mismanagement of databases (including errors) can result in invalid
+#    signatures; this function will remove all incorrect signatures and resign
+#    all database files. To avoid this problem in future, ensure repo-add and
+#    repo-remove are always used with the '--sign' flag, or use pkgadd and
+#    pkgdel.
+# Return 0 if everything works, 1 if the GPGKEY variable isn't set, 2 if the
+#    repo parameters couldn't be determined, and 3 if there was an error
+#    signing a database file.
+localdbsign() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	if ! printenv GPGKEY &>/dev/null; then
+		error "GPGKEY environment variable not set"
+		return 1
+	fi
+	PKG_GET_PARAMS || return 1
+	msg "Removing all database signature files..."
+	if ! rm "${REPO_ROOT}/${REPO_NAME}".{db,files}*sig 2>/dev/null; then
+		error "Failed removing signatures"
+		return 2
+	fi
+	msg2 "Done"
+	msg "Signing all database files..."
+	DB_FILES=( "${REPO_ROOT}/${REPO_NAME}".{db,files}* )
+	local EXIT_CODE=0
+	for DB_FILE in "${DB_FILES[@]}"; do
+		UPDATE_SIGN_FILE "${DB_FILE}" || EXIT_CODE=3
+	done
+	(( EXIT_CODE > 0 )) && return "${EXIT_CODE}"
+	msg2 "Done"
+}
+
+# As with locldbsign(), but more extensive as this will resign all packages
+#    and then resign the entire database
+# Return 0 if everything works, 1 if the GPGKEY variable isn't set, 2 if the
+#    repo parameters couldn't be determined, 3 if there was an error signing
+#    a database file, and 4 if there was an error signing a package file.
+fixlocaldb() {
+	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
+
+	if ! printenv GPGKEY &>/dev/null; then
+		error "GPGKEY environment variable not set"
+		return 1
+	fi
+	PKG_GET_PARAMS || return 1
+	msg "Removing all signature files..."
+	if ! rm "${REPO_ROOT}"/*.sig 2>/dev/null; then
+		error "Failed removing signatures"
+		return 2
+	fi
+	msg2 "Done"
+	msg "Signing all package files..."
+	PKG_FILES=( "${REPO_ROOT}"/*.pkg.tar.* )
+	local EXIT_CODE=0
+	for PKG_FILE in "${PKG_FILES[@]}"; do
+		UPDATE_SIGN_FILE "${PKG_FILE}" || EXIT_CODE=4
+	done
+	# If there was a problem signing a file, don't bother signing db files
+	(( EXIT_CODE > 0 )) && return "${EXIT_CODE}"
+	msg2 "Done"
+	msg "Signing all database files..."
+	DB_FILES=( "${REPO_ROOT}/${REPO_NAME}".{db,files}* )
+	local EXIT_CODE=0
+	for DB_FILE in "${DB_FILES[@]}"; do
+		UPDATE_SIGN_FILE "${DB_FILE}" || EXIT_CODE=3
+	done
+	(( EXIT_CODE > 0 )) && return "${EXIT_CODE}"
+	msg2 "Done"
+}

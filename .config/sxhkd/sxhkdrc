@@ -1,0 +1,203 @@
+# ${XDG_CONFIG_HOME}/sxhkd/sxhkdrc
+#
+# Basic sxhkd configuration
+
+# -- General
+# Show the help menu
+super + slash
+	sxhkd-help
+# Lock the session
+super + l
+	loginctl lock-session
+# Take a screenshot
+@Print
+	scrot "$HOME/Downloads/Screenshot-$(date +%+4Y%m%d%H%M%S).png"
+
+# -- Applications
+# Open Alacritty
+super + shift + Return
+	/usr/bin/alacritty
+# Open Ranger
+super + ctrl + Return
+	/usr/bin/alacritty -e ranger
+# Open emacs
+super + alt + Return
+	/usr/bin/emacs
+
+# -- Menus
+# Open the application menu
+super + a
+	rofi -show run -theme launcher.rasi
+# Open the window selection menu
+super + w
+	rofi -show window -theme launcher.rasi
+# Open the power menu
+super + q
+	rofi-power
+
+# -- Reload
+# Restart bspwm
+super + shift + Escape; b
+	bspc wm -r; \
+	notify-send 'bspwm' 'Window Manager restarted'
+# Restart sxhkd
+super + shift + Escape; s
+	pkill -USR1 -x sxhkd; \
+	notify-send 'sxhkd' 'Hotkey daemon reloaded'
+# Restart polybar
+super + shift + Escape; p
+	xrdb ~/.config/X11/Xresources && polybar-msg cmd restart; \
+	notify-send 'polybar' 'Bar reloaded'
+# Change to a random background wallpaper
+super + shift + Escape; w
+	feh --no-fehbg --bg-fill --randomize ${WALLPAPER_DIR}
+# Reload keyboard layout
+super + shift + Escape; k
+	notify-send "$(setxkbmap -option 'ctrl:swapcaps')"
+
+# -- Layout
+# Toggle monocle mode
+super + m
+	bspc desktop -l next
+# Switch to tall or rtall mode
+super + ctrl + {_,shift} + t
+	bsp-layout set {tall,rtall} -- --master-size 0.6
+# Switch to wide or rwide mode
+super + ctrl + {_,shift} + f
+	bsp-layout set {wide,rwide} -- --master-size 0.6
+# Switch to grid or rgrid mode
+super + ctrl + {_,shift} + g
+	bsp-layout set {grid,rgrid}
+
+# -- Node
+# Close or kill the focused node
+super + {shift,alt} + c
+	bspc node {-c,-k}
+# Set the node state (tiled, pseudo tiled, floating, fullscreen)
+super + {t,p,s,f}
+	bspc node -t {tiled,pseudo_tiled,floating,fullscreen}
+# Set the node flags (marked, locked, sticky)
+super + ctrl + {m,x,s}
+	bspc node -g {marked,locked,sticky}
+# Focus node by direction
+super + {h,j,k,l}
+	bspc node -f {west,south,north,east}
+# Focus next or previous node on current desktop
+alt + {_,shift} + Tab
+	bspc node -f {next,prev}.local.!hidden.window
+# Focus older or newer node in focus history
+super + {o,i}
+	bspc wm -h off;             \
+	bspc node {older,newer} -f; \
+	bspc wm -h on
+# Swap node by direction
+super + shift + {h,j,k,l}
+	bspc node -s {west,south,north,east}
+# Swap current node with the biggest node
+super + shift + b
+	bspc node -s biggest.local
+# Swap focused node with last marked node
+super + y
+	bspc node -s newest.marked.local
+# Activate resize mode, escape to exit
+super + r : {h,j,k,l}
+	STEP=20; SELECTION={1,2,3,4}; \
+	bspc node -z $(echo "left -$STEP 0,bottom 0 $STEP,top 0 -$STEP,right $STEP 0" | cut -d',' -f$SELECTION) || \
+	bspc node -z $(echo "right -$STEP 0,top 0 $STEP,bottom 0 -$STEP,left $STEP 0" | cut -d',' -f$SELECTION)
+# Move floating node
+super + {Left,Down,Up,Right}
+	bspc node -v {-20 0,0 20,0 -20,20 0}
+
+# -- Desktop
+# Switch to specified desktop
+super + {1-9,0}
+	bspc desktop -f '^{1-9,10}'
+# Send to specified desktop
+super + shift + {1-9,0}
+	bspc node -d '^{1-9,10}'
+# Focus next or previous desktop on current monitor
+super + {_,shift} + Tab
+	bspc desktop -f {next,prev}.local
+# Focus next or previous desktop on any monitor
+super + bracket{left,right}
+	bspc desktop -f {prev,next}
+
+# -- Preselection
+# Preselect new window direction
+super + ctrl + {h,j,k,l}
+	bspc node -p {west,south,north,east}
+# Preselect new window ratio
+super + ctrl + {1-9}
+	bspc node -o 0.{1-9}
+# Cancel preselection for the focused node
+super + ctrl + space; n
+	bspc node -p cancel
+# Cancel all preselections on currently focused desktop
+super + ctrl + space; a
+	bspc query -N -d | xargs -I id -n 1 bspc node id -p cancel
+
+# -- Dunst
+# Close latest notification
+super + backslash
+	dunstctl close
+# Close all notifications
+super + shift + backslash
+	dunstctl close-all
+# Re-open last notification
+super + shift + alt backslash
+	dunstctl history-pop
+# Execute notification action
+super + shift + grave
+	dunstctl context
+
+# -- Spotify
+# Play/pause
+super + shift + space
+    playerctl play-pause --player=spotify
+# Next track
+super + shift + Right
+    playerctl next --player=spotify
+# Previous track
+super + shift + Left
+    playerctl previous --player=spotify
+
+# -- MPD
+# Play/pause
+super + alt + space
+    playerctl play-pause --player=mpd
+# Next track
+super + alt + Right
+    playerctl next --player=mpd
+# Previous track
+super + alt + Left
+    playerctl previous --player=mpd
+
+#  -- Media Keys
+# Volume up/down
+{XF86AudioRaiseVolume, XF86AudioLowerVolume}
+	pamixer -u -{i,d} 5
+# Mute volume
+XF86AudioMute
+	pamixer -t
+# Mic mute
+XF86AudioMicMute
+	pamixer --source 1 -t
+# Stop playing
+XF86AudioStop
+	playerctl stop
+# Toggle playing
+XF86AudioPlay
+	playerctl play-pause
+# Previous track
+XF86AudioPrev
+	playerctl previous
+# Next track
+XF86AudioNext
+	playerctl next
+# Decrease brightness
+XF86MonBrightnessDown
+	[[ $(xbacklight -get) -le 10 ]] && xbacklight -dec 1 || xbacklight -dec 5
+# Increase brightness
+XF86MonBrightnessUp
+	[[ $(xbacklight -get) -lt 10 ]] && xbacklight -inc 1 || xbacklight -inc 5
+

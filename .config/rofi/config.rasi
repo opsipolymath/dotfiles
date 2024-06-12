@@ -1,0 +1,6 @@
+// ${XDG_CONFIG_HOME}/rofi/config.rasi
+//
+// Load nord theme for rofi
+
+configuration {
+}

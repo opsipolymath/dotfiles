@@ -1,0 +1,4 @@
+[[keyboard.bindings]]
+action = "None"
+key = "Space"
+mods = "Shift|Control"

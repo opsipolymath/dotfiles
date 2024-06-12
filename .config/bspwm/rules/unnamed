@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# ${XDG_CONFIG_HOME}/bspwm/rules/spotify
+#
+# bspwm external rules to force spotify to a given desktop
+
+# Set variables
+__win_id="${1?}"
+__win_class="${2}"
+__atom="_NET_WM_PID"
+__steam="^8"
+__spotify="^9"
+
+# Ignore STDERR output
+exec 2>/dev/null
+
+# Only process windows of undefined class
+if [ "${__win_class}" = "" ]; then
+	# Check if it's steam related
+	__name="$(xprop -id "${__win_id}" | grep '^WM_NAME' | cut -d= -f2)"
+	if [[ "${__name}" = *Steam* ]]; then
+		echo desktop="${__steam}"
+		return
+	fi
+	# Check what else it might be
+	__pid="$( xprop -id "${__win_id:?}" -notype -f "${__atom}" 32c '=$0' "${__atom}" | cut -d= -f2 )"
+	__name="$(ps -p "${__pid:?}" -o comm= )"
+	if [ "spotify" = "${__name}" ]; then
+		echo desktop="${__spotify}";
+		return
+	fi
+fi
+
+#notify-send "id=${__win_id} class=${__win_class}" "pid=${__pid} name=${__name}"

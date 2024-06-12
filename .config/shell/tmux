@@ -1,0 +1,22 @@
+#!/usr/bin/bash
+
+# ${SHELL_HOME}/tmux
+#
+# Tmux-related settings
+
+# Overload tmux for simpler execution
+tmux() {
+	# If no commands specified or only 'a', attach to default session if
+	# one exists, or create a default session if one doesn't
+	if (( $# == 0 )) || ( (( $# == 1 )) && [[ "${1}" == "a" ]] ); then
+		if /usr/bin/tmux ls 2>/dev/null | grep -q ^"${USER}"; then
+			/usr/bin/tmux a -t "${USER}"
+			return
+		fi
+		/usr/bin/tmux new-session -s "${USER}"
+		return
+	fi
+
+	# Otherise pass all arguments to tmux
+	/usr/bin/tmux "$@"
+}

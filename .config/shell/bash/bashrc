@@ -1,0 +1,26 @@
+#!/usr/bin/bash
+
+# ${BASHDOTIR}/bashrc
+#
+# Main rc file for bash shells
+# Loaded only for interactice shells
+
+# Report errors if glob doesn't match anything
+shopt -s failglob
+
+# Notify of job completion immediately
+set -b
+
+# Disable audible bell
+bind 'set bell-style visible'
+
+# Use vi mode, but still let CTRL+l clear the screen
+set  -o vi
+bind -m vi-insert "\C-l":clear-screen
+
+# History ignores leading spaces and only keeps latest duplicate
+export HISTCONTROL=ignoreboth:erasedups
+
+# Load bash-specific modules
+source "${BDOTDIR}"/keybinds
+source "${BDOTDIR}"/prompt

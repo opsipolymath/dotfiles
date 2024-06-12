@@ -1,0 +1,155 @@
+// $XDG_CONFIG_HOME/rofi/themes/menu.rasi
+//
+// Custom menu theme for rofi
+
+@import "colors/nord.rasi"
+
+configuration {
+	show-icons:            false;
+}
+
+window {
+	transparency:          "real";
+	location:              center;
+	anchor:                center;
+	fullscreen:            false;
+	width:                 800;
+	border:                1px solid;
+	border-radius:         0px;
+	border-color:          @selected;
+	cursor:                "default";
+	background-color:      @background-light;
+}
+
+mainbox {
+	enabled:               true;
+	spacing:               20px;
+	margin:                0px;
+	padding:               20px;
+	border:                2px;
+	border-color:          @selected;
+	background-color:      transparent;
+	children:              [ "inputbar", "message", "listview" ];
+}
+
+inputbar {
+	enabled:               true;
+	orientation:           vertical;
+	spacing:               275px;
+	border:                1px;
+	border-radius:         0px;
+	border-color:          @selected;
+	background-color:      transparent;
+	background-image:      url("images/menu.png", width);
+	text-color:            @foreground;
+	children:              [ "prompt-holder", "entry" ];
+}
+
+prompt-holder {
+	enabled:               true;
+	orientation:           horizontal;
+	spacing:               25px;
+	padding:               25px;
+	background-color:      transparent;
+	text-color:            @foreground;
+	children:              [ "textbox-prompt", "prompt"];
+}
+
+textbox-prompt {
+	enabled:               true;
+	expand:                false;
+	str:                   "";
+	padding:               10px 10px 13px;
+	border-radius:         0px;
+	background-color:      @urgent;
+	text-color:            @background;
+}
+
+prompt {
+	enabled:               true;
+	padding:               10px;
+	border-radius:         0px;
+	background-color:      @active;
+	text-color:            @background;
+}
+
+entry {
+	enabled:               true;
+	orientation:           horizontal;
+	padding:               5px 15px 5px 10px;
+	margin:                25px;
+	background-color:      @background-light;
+	text-color:            inherit;
+	cursor:                text;
+	placeholder:           "Search";
+	placeholder-color:     inherit;
+	vertical-align:        0.5;
+}
+
+message {
+	enabled:               true;
+	margin:                0px;
+	padding:               10px;
+	border:                0px solid;
+	border-radius:         0px;
+	border-color:          @selected;
+	background-color:      @background-light;
+	text-color:            @foreground;
+}
+
+textbox {
+	background-color:      inherit;
+	text-color:            inherit;
+	vertical-align:        0.5;
+	horizontal-align:      0.5;
+}
+
+listview {
+	enabled:               true;
+	columns:               1;
+	lines:                 15;
+	cycle:                 true;
+	scrollbar:             false;
+	layout:                vertical;
+	spacing:               0px;
+	background-color:      transparent;
+	cursor:                "default";
+}
+
+element {
+	enabled:               true;
+	padding:               5px 5px;
+	border:                0px;
+	background-color:      transparent;
+	text-color:            @foreground;
+	cursor:                pointer;
+}
+element-text {
+	background-color:      transparent;
+	text-color:            inherit;
+	cursor:                inherit;
+	vertical-align:        0.5;
+}
+
+element normal.normal,
+element alternate.normal {
+	background-color:      var(background);
+	text-color:            var(foreground);
+}
+element normal.urgent,
+element alternate.urgent,
+element selected.active {
+	background-color:      var(urgent);
+	text-color:            var(background);
+}
+element normal.active,
+element alternate.active,
+element selected.urgent {
+	background-color:      var(active);
+	text-color:            var(background);
+}
+element selected.normal {
+	background-color:      var(selected);
+	text-color:            var(background);
+}
+

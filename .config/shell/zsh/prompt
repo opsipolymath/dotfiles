@@ -1,0 +1,106 @@
+#!/usr/bin/zsh
+
+# ${ZDOTDIR}/prompt
+#
+# Sets the zsh prompt
+
+# Load module for adding hooks
+autoload -Uz add-zsh-hook
+
+# Display number of commits ahead/behind and status for git repos
+PROMPT_GIT_CHANGES() {
+	local G_AHEAD G_BEHIND G_CHANGES
+	G_AHEAD="$(git_cmd rev-list --count "@{u}..HEAD" 2>/dev/null)"
+	G_BEHIND="$(git_cmd rev-list --count "HEAD..@{u}" 2>/dev/null)"
+	if (( G_AHEAD > 0 )) || (( G_BEHIND > 0 )); then
+		printf '%s' "${PROMPT_SPLIT}"
+		(( G_AHEAD )) &&
+			printf '%s' "%F{green}${G_AHEAD}"
+		(( G_BEHIND )) &&
+			printf '%s' "%F{red}${G_BEHIND}"
+	fi
+	G_CHANGES="$(git_cmd status --porcelain=v1 2>/dev/null | wc -l)"
+	printf '%s' "${PROMPT_SPLIT}"
+	if (( G_CHANGES > 0 )); then
+		printf '%s' "%F{red}"
+		if [[ "${TERM}" == "linux" ]]; then
+			printf 'unclean'
+		else
+			printf '%sclean%s%s' $'\e[9m' "$( tput sgr0 )" '%f'
+		fi
+	else
+		printf '%s' "%F{green}clean%f"
+	fi
+}
+
+# DIsplay git data if in a git repo or a dotfiles-tracked directory
+PROMPT_GIT() {
+	if git status &>/dev/null; then
+		alias git_cmd="/usr/bin/git"
+	else
+		[[ "${PWD}" != "${HOME}" ]] &&
+			[[ ! "${PWD}" =~ ^"${HOME}/.config" ]] &&
+			[[ ! "${PWD}" =~ ^"${HOME}/.cache" ]] &&
+			[[ ! "${PWD}" =~ ^"${HOME}/.local" ]] &&
+			return 1
+		alias git_cmd='dotfiles'
+		printf '%s%sdotfiles' "${PROMPT_SPLIT}" '%F{yellow}'
+	fi
+	PROMPT_GIT_CHANGES
+}
+
+set_prompt () {
+	unset PROMPT RPROMPT
+
+	PROMPT_TOP="%F{blue}┌["
+	PROMPT_BOTTOM="%F{blue}└["
+	PROMPT_SPLIT="%F{blue}]─["
+	PROMPT_CLOSE="%F{blue}]%f"
+
+	# Display PWD in green if writable, red if not
+	PROMPT_DIR="%F{red}%~%F{blue}"
+	[[ -w "." ]] && PROMPT_DIR="%F{green}%~%F{blue}"
+
+	PROMPT_TOP+="${PROMPT_DIR}$(PROMPT_GIT)%F{blue}]"
+
+	# Display root in red, regular user in green
+	PROMPT_BOTTOM+="%(#.%F{red}odin%F{green}.%F{green}%n)@%m${PROMPT_CLOSE}"
+	PROMPT_BOTTOM+="%(#.%F{red}.%F{blue}) %# %f"
+
+	PROMPT="%B${PROMPT_TOP}%b"$'\n'"%B${PROMPT_BOTTOM}%b"
+
+	# Setup RPROMPT if in an SSH session
+	if [[ -n "$SSH_TTY" ]]; then
+		RPROMPT='%B%F{blue}[%F{green}via %F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}]%f%b'
+	fi
+
+	# Set cursor to a block in vi mode, underline otherwise
+	echo -ne '\e[4 q'
+	if [[ "${KEYMAP}" == vicmd ]]; then
+		echo -ne '\e[2 q'
+	fi
+
+	# Reset visibility status
+	tput cnorm
+}
+
+# Re-evaluate prompt when mode changes
+function zle-line-init zle-keymap-select() {
+	set_prompt
+	zle reset-prompt
+}
+zle -N zle-line-init
+zle -N zle-keymap-select
+
+# Re-evaluate prompt before each command is run
+add-zsh-hook precmd set_prompt
+
+# Define multi-line command prompts to be more clear
+export PROMPT2='%F{yellow}»··%_%(4l..··)··%F{blue}> %f'
+#export PROMPT2='%F{yellow}»·······%F{blue}> %f'
+
+# Define default selection prompt
+export PROMPT3='Make a selection: '
+
+# Define shell tracing prompt to be more useful
+export PROMPT4='+%F{yellow}+%1N-%I> %f'

@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+
+# ${SHELL_HOME}/gpg
+#
+# Use gpg as ssh agent
+
+# Export necessary variables
+SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+GPG_TTY=$(tty)
+export SSH_AUTH_SOCK GPG_TTY
+
+# Restart the agent to reload the configuration
+gpg-connect-agent /bye >/dev/null 2>&1

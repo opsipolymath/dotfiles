@@ -1,0 +1,277 @@
+* {
+	font-family: "JetBrainsMono Nerd Font Propo";
+	font-size: 14px;
+}
+
+window#waybar {
+	border: 0;
+	background: transparent;
+}
+
+window > box {
+	background: transparent;
+	transition-duration: .5s;
+	border: 0;
+}
+
+button {
+	/* Use box-shadow instead of border so the text isn't offset */
+	box-shadow: inset 0 -3px transparent;
+	/* Avoid rounded borders under each button name */
+	border: none;
+	border-radius: 0;
+}
+
+#workspaces {
+	border: 2px solid #88C0D0;
+	border-radius: 25px;
+	color: #88C0D0;
+	padding: 0;
+	margin: 0;
+	background: rgba(46, 52, 64, 1.0);
+}
+
+#workspaces button {
+	margin: 0;
+	padding: 2px;
+	color: #88C0D0;
+}
+
+#workspaces button label {
+	margin: 3px 0 0 0;
+	padding: 2px 4px 0 4px;
+}
+
+#workspaces button.active {
+	background: #88C0D0;
+	color: #2E3440;
+}
+
+#workspaces button:first-child {
+	border-radius: 25px 0 0 25px;
+	padding-left: 5px;
+}
+#workspaces button:last-child {
+	border-radius: 0 25px 25px 0;
+	padding-right: 5px;
+}
+
+#workspaces button.empty {
+	color: #4C566A;
+}
+
+#workspaces button.urgent {
+	background: #BF616A;
+}
+
+#custom-spotify.icon {
+	font-size: 18px;
+	color: #A3BE8C;
+	padding-left: 12px;
+	border-left: 2px solid #88C0D0;
+	border-radius: 25px 0 0 25px;
+}
+
+#custom-spotify {
+	padding: 0px 10px 0 5px;
+	color: #88C0D0;
+	background: rgba(46, 52, 64, 1.0);
+	border-top: 2px solid #88C0D0;
+	border-bottom: 2px solid #88C0D0;
+}
+
+#custom-spotify.time {
+	padding: 0px 12px 0 5px;
+	border-right: 2px solid #88C0D0;
+	border-radius: 0 25px 25px 0;
+}
+
+.modules-right {
+	border: 2px solid #88C0D0;
+	border-radius: 25px;
+	margin: 0;
+	padding: 0;
+}
+
+#network,
+#pulseaudio,
+#temperature,
+#backlight,
+#battery,
+#clock,
+#privacy,
+#tray,
+#scratchpad {
+	margin: 0;
+	padding: 0 10px;
+	color: #88C0D0;
+	background: rgba(46, 52, 64, 1.0);
+}
+
+#network.icon,
+#pulseaudio.icon,
+#pulseaudio.source,
+#temperature.icon,
+#backlight.icon,
+#battery.icon,
+#clock.icon,
+#privacy.icon,
+#tray.icon,
+#scratchpad.icon {
+	border-radius: 0;
+	background: #81A1C1;
+	color: #2E3440;
+}
+
+#network:hover,
+#pulseaudio:hover,
+#temperature:hover,
+#backlight:hover,
+#battery:hover,
+#clock:hover,
+#tray:hover,
+#privacy:hover,
+#scratchpad:hover {
+	background: #D8DEE9;
+}
+
+#network.icon {
+	border-radius: 25px 0 0 25px;
+}
+
+#network.disconnected {
+	background: #4C566A;
+}
+
+#pulseaudio.icon.muted {
+	background: #4C566A;
+	color: #D8DEE9;
+}
+
+#pulseaudio.source.source-muted {
+	background: #4C566A;
+	font-size: 13px;
+	padding: 0 7px;
+	color: #D8DEE9;
+}
+
+#temperature.critical {
+	background: #BF616A;
+}
+
+tooltip {
+	background: #2E3440;
+}
+
+#battery.charging.icon, #battery.plugged.icon, #battery.full.icon {
+	background: #A3BE8C;
+}
+
+@keyframes blink {
+	to {
+		background: #2E3440;
+	}
+}
+
+@keyframes blink2 {
+	to {
+		background: #A3BE8C;
+	}
+}
+
+#battery.low {
+	background: #A3BE8C;
+}
+
+#battery.warning {
+	background: #EBCB8B;
+	animation-name: blink2;
+	animation-duration: 1.0s;
+	animation-timing-function: steps(12);
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
+}
+
+#battery.critical {
+	background: #BF616A;
+	animation-name: blink2;
+	animation-duration: 1.0s;
+	animation-timing-function: steps(12);
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
+}
+
+#battery.low:not(.charging) {
+	background: #EBCB8B;
+	animation-name: blink;
+	animation-duration: 1.0s;
+	animation-timing-function: steps(12);
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
+}
+
+#battery.warning:not(.charging) {
+	background: #D08770;
+	animation-name: blink;
+	animation-duration: 0.5s;
+	animation-timing-function: steps(12);
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
+}
+
+#battery.critical:not(.charging) {
+	background: #BF616A;
+	animation-name: blink;
+	animation-duration: 0.3s;
+	animation-timing-function: steps(12);
+	animation-iteration-count: infinite;
+	animation-direction: alternate;
+}
+
+#privacy {
+	padding: 0;
+}
+
+#privacy-item {
+	padding: 0 5px;
+}
+
+#privacy-item.screenshare {
+	background: #D08770;
+}
+
+#privacy-item.audio-in {
+	background: #EBCB8B;
+}
+
+#privacy-item.audio-out {
+	background: #B48EAD;
+}
+
+#tray {
+	background: #5E81AC;
+	border-radius: 0 25px 25px 0;
+}
+
+#tray > .passive {
+	-gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+	-gtk-icon-effect: highlight;
+	background: #BF616A;
+}
+
+#workspaces button:hover,
+#network:hover,
+#pulseaudio:hover,
+#temperature:hover,
+#backlight:hover,
+#battery:hover,
+#clock:hover,
+#tray:hover,
+#privacy:hover,
+#scratchpad:hover {
+	background: #D8DEE9;
+	color: #2E3440;
+}

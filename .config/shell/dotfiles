@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+# {SHELL_HOME}/dotfiles
+#
+# Settings, functions and aliases related to dotfiles
+
+# Set environment variables
+export DOTFILES="${XDG_CONFIG_HOME:-${HOME}/.config}/dotfiles"
+
+# Setup alias for dotfiles
+alias dotfiles='git --git-dir="${DOTFILES}" --work-tree="${HOME}"'

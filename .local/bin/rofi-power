@@ -1,0 +1,41 @@
+#! /bin/sh
+
+__prompt="$(hostname)"
+__msg="Uptime: $(uptime -p | sed -e 's/up //')"
+
+__lock="󰍁"
+__exit=""
+__reboot="󰦛"
+__poweroff="󰐥"
+
+rofi_cmd() {
+	rofi -theme-str 'textbox-prompt {str: "󰐥";}' \
+		-dmenu -p "$__prompt" \
+		-mesg "$__msg" \
+		-markup-rows \
+		-theme applet
+}
+
+__selected="$( echo -e "${__lock}\n${__exit}\n${__reboot}\n${__poweroff}" | rofi_cmd )"
+
+case "${__selected}" in
+	$__lock)
+		loginctl lock-session
+		exit
+		;;
+	$__exit)
+		hyprctl dispatch exit
+		exit
+		;;
+	$__reboot)
+		if $HOME/.local/bin/rofi-confirmation "Really reboot?"; then
+			systemctl reboot
+		fi
+		;;
+	$__poweroff)
+		if $HOME/.local/bin/rofi-confirmation "Really shutdown?"; then
+			systemctl poweroff
+		fi
+		;;
+esac
+

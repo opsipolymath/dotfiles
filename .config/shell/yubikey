@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+
+# {SHELL_HOME}/yubikey
+#
+# Settings related to yubikeys
+
+# Set active yubikey to one currently connected
+gpg-connect-agent "scd serialno" "learn --force" /bye &>/dev/null
+
+# Update yubikey serial number
+alias yku="/usr/bin/gpg-connect-agent 'scd serialno' 'learn --force' /bye &>/dev/null"

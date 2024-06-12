@@ -1,0 +1,24 @@
+# ${XDG_CONFIG_HOME}/git/git.conf
+#
+# User git configuration
+
+[user]
+	email      = opsipolymath+github@gmail.com
+	name       = opsipolymath
+	signingkey = 0164B836
+[commit]
+	gpgsign = true
+	template = ~/.config/git/commit-msg
+[init]
+	defaultBranch = master
+[pull]
+	rebase = false
+[diff]
+	tool = nvimdiff
+[difftool]
+	prompt = false
+[difftool "nvimdiff"]
+	cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
+[alias]
+	d   = difftool
+	rbm = rebase -Xours master
