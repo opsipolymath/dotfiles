@@ -25,31 +25,32 @@
 .config/user-dirs.dirs
 
 # Ignore specific configuration directories
-.config/BraveSoftware/
-.config/GIMP/
-.config/MusicBrainz/
-.config/PulseEffects/
-.config/VirtualBox/
-.config/Yubico
 .config/aurutils/
+.config/BraveSoftware/
 .config/cef_user_data/
 .config/chromium/
 .config/dconf/
 .config/doom/
 .config/dwarftherapist/
 .config/emacs/
+.config/foot/
 .config/freerdp/
+.config/GIMP/
 .config/google-chrome/
 .config/gtk-*/
+.config/heroic/
 .config/inkscape/
 .config/irssi/
 .config/libreoffice/
 .config/midori/
+.config/MusicBrainz/
 .config/nwg-look/
+.conig/nwg-displays/
 .config/obs-studio/
 .config/paradox-launcher*/
 .config/pipewire/
 .config/pulse/
+.config/PulseEffects/
 .config/qutebrowser/
 .config/rclone/
 .config/repoctl/
@@ -59,8 +60,10 @@
 .config/systemd/user/default.target.wants/
 .config/tor/
 .config/unity3d/
+.config/VirtualBox/
 .config/vlc/
 .config/yams/
+.config/Yubico
 
 # cmus - Ignore everything except config
 .config/cmus/*
@@ -88,6 +91,7 @@
 .config/nvim/plugged/
 .config/nvim/templates/
 .config/shell/.histfile
+.config/shell/zsh/.zcompdump
 .config/tmux/plugins/
 .config/tmux/resurrect/
 .config/zsh/.histfile
