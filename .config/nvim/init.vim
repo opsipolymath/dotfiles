@@ -246,6 +246,9 @@ set clipboard^=unnamed,unnamedplus
 " Auto reload kitty when config changes
 autocmd bufwritepost ~/.config/kitty/*.conf :silent !kill -SIGUSR1 $(pgrep kitty)
 
+" Abbreviations
+iabbrev TODO (TODO[DN]:)<Left>
+
 " ---- Misc Options }}}
 
 " ---- Terminal {{{
