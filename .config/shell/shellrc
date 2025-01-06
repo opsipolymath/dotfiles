@@ -55,4 +55,5 @@ source "${SHELL_HOME}"/poweroff
 source "${SHELL_HOME}"/private
 source "${SHELL_HOME}"/tmux
 source "${SHELL_HOME}"/update
+source "${SHELL_HOME}"/wsl
 source "${SHELL_HOME}"/yubikey

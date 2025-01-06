@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Starts all required sockets and applications to enable yubikey in WSL.
+# Requires gpg and pageant installed on windows host, and key connected
+#     to host already (use gpg --card-status in powershell).
+
+
+wsl_load_key() {
+	pageant_bin="$HOME"/.config/ssh/wsl2-ssh-pageant.exe
+	[[ ! -x "$pageant_bin" ]] &&
+		echo >&2 "ERROR: ${pageant_bin} is not executable." &&
+		unset pageant_bin &&
+		return
+
+	stty_config=$(stty -g)
+	stty -icanon -echo
+	printf "Run 'gpg --card-status' in powershell then return and press any key... "
+	key=$(dd bs=1 count=1 2>/dev/null)
+	printf '\n'
+	stty "${stty_config}"
+
+	printf 'Exporting variables... '
+	export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
+	export GPG_AGENT_SOCK=$(gpgconf --list-dirs agent-socket)
+	printf 'Done.\nRemoving old sockets... '
+	[[ "${SSH_AUTH_SOCK}" == "" || "${GPG_AGENT_SOCK}" == "" ]] &&
+		echo >&2 "ERROR: Socket variables are incorrect." &&
+		return
+	rm -rf "$SSH_AUTH_SOCK"
+	rm -rf "$GPG_AGENT_SOCK"
+	printf 'Done.\nCreating new sockets... '
+	setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$pageant_bin" &>/dev/null
+	setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$pageant_bin -gpgConfigBasepath 'C:/Users/Darren/AppData/Local/gnupg' -gpg S.gpg-agent" &>/dev/null
+	printf 'Done.'
+
+	unset pageant_bin
+
+	gpg --card-status
+}
