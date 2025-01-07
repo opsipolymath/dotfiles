@@ -12,28 +12,28 @@ wsl_load_key() {
 		unset pageant_bin &&
 		return
 
-	stty_config=$(stty -g)
-	stty -icanon -echo
-	printf "Run 'gpg --card-status' in powershell then return and press any key... "
-	key=$(dd bs=1 count=1 2>/dev/null)
-	printf '\n'
-	stty "${stty_config}"
-
-	printf 'Exporting variables... '
 	export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
 	export GPG_AGENT_SOCK=$(gpgconf --list-dirs agent-socket)
-	printf 'Done.\nRemoving old sockets... '
 	[[ "${SSH_AUTH_SOCK}" == "" || "${GPG_AGENT_SOCK}" == "" ]] &&
 		echo >&2 "ERROR: Socket variables are incorrect." &&
 		return
 	rm -rf "$SSH_AUTH_SOCK"
 	rm -rf "$GPG_AGENT_SOCK"
-	printf 'Done.\nCreating new sockets... '
 	setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$pageant_bin" &>/dev/null
 	setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$pageant_bin -gpgConfigBasepath 'C:/Users/Darren/AppData/Local/gnupg' -gpg S.gpg-agent" &>/dev/null
-	printf 'Done.'
 
 	unset pageant_bin
 
-	gpg --card-status
+	if ! gpg --card-status &>/dev/null && [[ $GPG_CHECK != true ]]; then
+		export GPG_CHECK=true
+		wsl_load_key
+		unset GPG_CHECK
+		if gpg --card-status; then
+			printf 'Yubikey loaded successfully.\n'
+		else
+			printf 'ERROR: Yubikey not detected.\n'
+		fi
+	else
+		printf 'Yubikey loaded successfully.\n'
+	fi
 }
