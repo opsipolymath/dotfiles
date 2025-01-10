@@ -41,7 +41,7 @@ export VISUAL="/usr/bin/nvim"
 export TEXMFHOME="${XDG_DATA_HOME}/texmf"
 
 # Specify default GPG key
-export GPGKEY=0164B836
+export GPGKEY=0F56827E
 
 # Misc directories
 export WALLPAPER_DIR="/usr/share/wallpapers/favourites"
