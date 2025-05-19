@@ -9,9 +9,6 @@
 #   /usr/share/makepkg/util/message.sh
 # Note that various functions are needed to trigger string re-evaluation
 
-# Colorize if outputting to console
-[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 # Global variables used in prompts
 PROMPT_TOPEN="$(printf "%s┌[" "\[${BLUE}\]")"
 PROMPT_BOPEN="$(printf "%s└[" "\[${BLUE}\]")"

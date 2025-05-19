@@ -192,9 +192,6 @@ pvt() {
 
 	alias pvt_git='git --git-dir="${ENC_DIR}" --work-tree="${ENC_DIR}"'
 
-	# Only colorize if outputting to console
-	[[ -t 1 ]] && [[ -t 2 ]] && [[ -z "${ALL_OFF}" ]] && colorize &>/dev/null
-
 	if (( $# != 1 )); then
 		PVT_USAGE
 		return

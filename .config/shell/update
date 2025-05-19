@@ -13,8 +13,6 @@ alias aursync="/usr/bin/aur sync --noview --chroot --sign --remove"
 # Update all packages; pass `aur` as first argument to update AUR pakages at
 #    the same time. Returns 0 on success, 0 otherwise
 update() {
-	[[ -t 1 ]] && [[ -t 2 ]] && [[ -z RED ]] && colorize &>/dev/null
-
 	if [[ "aur" == "${1}" ]]; then
 		if ! pacman -Qq aurutils &>/dev/null; then
 			error "aurutils not installed"
@@ -50,16 +48,12 @@ update() {
 
 # Display an erorr that aurutils isn't installed
 PKG_AURUTILS_MISSING() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	error "aurutils is not installed"
 	return 2
 }
 
 # Display an erorr that repoctl isn't installed
 PKG_REPOCTL_MISSING() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	error "aurutils is not installed"
 	return 2
 }
@@ -102,8 +96,6 @@ PKG_GET_PARAMS() {
 
 # Attempts to use gpg to sign a file
 UPDATE_SIGN_FILE() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	if ! gpg --detach-sign --no-armor --batch -u "${GPGKEY}" "${1}"; then
 		error "Failed signing ${1}"
 		return 1
@@ -115,8 +107,6 @@ UPDATE_SIGN_FILE() {
 # Returns 0 if everything was successful, 1 if GPGKEY isn't set, 2 if local
 #    repo parameters couldn't be determined, and 3 if package signing failed.
 pkgadd() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	if ! printenv GPGKEY &>/dev/null; then
 		error 'GPGKEY environment variable not set'
 		return 1
@@ -139,8 +129,6 @@ pkgadd() {
 
 # Removes a package from the local repo, deleting the files and signing the db
 pkgdel() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	if ! printenv GPGKEY &>/dev/null; then
 		error 'GPGKEY environment variable not set'
 		return 1
@@ -155,8 +143,6 @@ pkgdel() {
 # Check for potentially orphaned package files
 # NOTE: '-debug' packages are owned by other packages, so they are not checked
 pkgverify() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	msg "Comparing local package files to database..."
 	NOT_INSTALLED=()
 	PKG_GET_PARAMS || return 1
@@ -186,8 +172,6 @@ pkgverify() {
 #    repo parameters couldn't be determined, and 3 if there was an error
 #    signing a database file.
 localdbsign() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	if ! printenv GPGKEY &>/dev/null; then
 		error "GPGKEY environment variable not set"
 		return 1
@@ -215,8 +199,6 @@ localdbsign() {
 #    repo parameters couldn't be determined, 3 if there was an error signing
 #    a database file, and 4 if there was an error signing a package file.
 fixlocaldb() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	if ! printenv GPGKEY &>/dev/null; then
 		error "GPGKEY environment variable not set"
 		return 1

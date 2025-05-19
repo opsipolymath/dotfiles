@@ -25,7 +25,8 @@ export SAVEHIST=200000
 
 # Load makepkg messaging library on Arch if it exists
 [[ -f /usr/share/makepkg/util/message.sh ]] &&
-	source /usr/share/makepkg/util/message.sh
+	source /usr/share/makepkg/util/message.sh &&
+	colorize
 
 # Load bash configuratio
 # NB ${BDOTDIR} should be set by /etc/bash.bashrc

@@ -6,8 +6,6 @@
 
 # A simple alarm using 'mpg123' and the 'z' queue for 'at'
 setalarm() {
-	[[ -t 1 ]] && [[ -t 2 ]] && colorize &>/dev/null
-
 	# Make sure the alarm command is correctly setup
 	if [[ "/usr/bin/mpg123" != "$(readlink -f "$(which alarm)")" ]]; then
 		if [[ ! -f /usr/bin/mpg123 ]]; then
