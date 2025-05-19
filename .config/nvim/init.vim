@@ -27,6 +27,7 @@ call plug#begin('$XDG_DATA_HOME/nvim/site/plugged')
 	Plug 'lervag/vimtex'
 	Plug 'mzlogin/vim-markdown-toc'
 	Plug 'preservim/nerdtree'
+	Plug 'sphamba/smear-cursor.nvim'
 	Plug 'thisisrandy/vim-outdated-plugins'
 	Plug 'vimwiki/vimwiki', { 'branch': 'dev' }
 	Plug 'xuhdev/vim-latex-live-preview', { 'for': 'tex' }
@@ -36,6 +37,16 @@ call plug#end()
 " -- Plugin Settings {{{
 " nord-vim
 " let g:nord_uniform_status_lines = 1
+
+" lua require('smear_cursor').enabled = true
+lua require('smear_cursor').setup({
+	\ enabled = true,
+	\ stiffness = 0.7,
+	\ trailing_stiffness = 0.6,
+	\ stiffness_insert_mode = 0.8,
+	\ trailing_stiffness_insert_mode = 0.8,
+	\ distance_stop_animating = 0.1
+\})
 
 " lightline
 let g:lightline = {
@@ -241,7 +252,8 @@ set timeoutlen=1000 ttimeoutlen=0
 set mouse=
 
 " Use the global clipboard and the selection clipboard
-set clipboard^=unnamed,unnamedplus
+"set clipboard^=unnamed,unnamedplus
+set clipboard+=unnamedplus
 
 " Auto reload kitty when config changes
 autocmd bufwritepost ~/.config/kitty/*.conf :silent !kill -SIGUSR1 $(pgrep kitty)
