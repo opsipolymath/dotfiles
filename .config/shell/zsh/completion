@@ -4,10 +4,6 @@
 #
 # Completion settings
 
-# Load completion module and initialize it
-autoload -Uz compinit
-compinit
-
 # -- Enable/disable options
 # List directories seperately and before files
 zstyle ':completion:*' list-dirs-first true
@@ -68,3 +64,13 @@ zstyle ':completion:*' preserve-prefix '//'
 # Update fpath to include custom completions
 [[ -d "${ZDOTDIR}/completions" ]] &&
 	fpath=( "${ZDOTDIR}"/completions ${fpath} )
+
+# Relocate completion cache to cache directory
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
+mkdir -p "$XDG_CACHE_HOME/zsh"
+ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump"
+
+# Load completion module and initialize it
+autoload -Uz compinit
+compinit -C -d "$ZSH_COMPDUMP"
+
