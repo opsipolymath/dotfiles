@@ -23,14 +23,15 @@ alias ls="/usr/bin/ls --color=auto -hv --group-directories-first"
 alias sort="/usr/bin/sort -h"
 
 # Shortened aliases for common applications
-alias mkdiff="diff -U 99999"
-alias nv="/usr/bin/nvim"
-alias nd="/usr/bin/nvim -d"
+alias docks='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Names}}"'
 alias em="emacsclient -c -a 'emacs'"
 alias emacs="emacsclient -c -a 'emacs'"
-alias se="/usr/bin/sudoedit"
 alias info="/usr/bin/pinfo"
 alias lc="/usr/bin/latexmk -aux-directory=/tmp/latex -pdf"
+alias mkdiff="diff -U 99999"
+alias nd="/usr/bin/nvim -d"
+alias nv="/usr/bin/nvim"
+alias se="/usr/bin/sudoedit"
 alias steam="/usr/bin/steam -nochatui -nofriendsui -silent"
 
 # Make startx use dbus properly
