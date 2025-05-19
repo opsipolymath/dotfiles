@@ -21,6 +21,12 @@ bind -m vi-insert "\C-l":clear-screen
 # History ignores leading spaces and only keeps latest duplicate
 export HISTCONTROL=ignoreboth:erasedups
 
+# Append history
+shopt -s histappend
+
+# Sync history after each command
+PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
+
 # Load bash-specific modules
 source "${BDOTDIR}"/keybinds
 source "${BDOTDIR}"/prompt
