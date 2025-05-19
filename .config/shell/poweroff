@@ -8,7 +8,11 @@
 POWEROFF_CONFIRM() {
 	warning "Connected via SSH"
 	ask "${1}"
-	read -rn1 confirm
+	if [[ -n "$ZSH_VERSION" ]]; then
+		read -k1 confirm
+	else
+		read -rn1 confirm
+	fi
 	printf '\n'
 	if [[ "y" != "${confirm}" ]] && [[ "Y" != "${confirm}" ]]; then
 		return 1
