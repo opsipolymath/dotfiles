@@ -1,9 +1,37 @@
 #!/bin/bash
 
 # Starts all required sockets and applications to enable yubikey in WSL.
-# Requires gpg and pageant installed on windows host, and key connected
-#     to host already (use gpg --card-status in powershell).
-
+# Requires gpg and pageant installed on windows host
+wsl_spinner() {
+	tput civis
+	gpg_cmd="/usr/bin/gpg"
+	if [[ "$1" == "ps" ]]; then
+		gpg_cmd="/mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe"
+	fi
+	set +m
+	{ "${gpg_cmd}" --card-status &>/dev/null & } 2>/dev/null
+	pid=$!
+	i=1; retval=0
+	spinner='/-\|'
+	printf '  '
+	while kill -0 "${pid}" &>/dev/null; do
+		printf "\b${spinner:((i++%4)):1}"
+		sleep 0.1
+	done
+	wait "${pid}"
+	retval=$?
+	set -m
+	tput cnorm
+	if [[ "${retval}" == 0 ]]; then
+		printf '\bDone.'
+	else
+		printf '\bFailed.'
+	fi
+	sleep 0.7
+	tput cr
+	tput el
+	return "${retval}"
+}
 
 wsl_load_key() {
 	pageant_bin="$HOME"/.config/ssh/wsl2-ssh-pageant.exe
@@ -20,20 +48,16 @@ wsl_load_key() {
 	rm -rf "$SSH_AUTH_SOCK"
 	rm -rf "$GPG_AGENT_SOCK"
 	setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$pageant_bin" &>/dev/null
-	setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$pageant_bin -gpgConfigBasepath 'C:/Users/Darren/AppData/Local/gnupg' -gpg S.gpg-agent" &>/dev/null
+	setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$pageant_bin -gpgConfigBasepath 'C:/Users/DN/AppData/Local/gnupg' -gpg S.gpg-agent" &>/dev/null
 
-	unset pageant_bin
-
-	if ! gpg --card-status &>/dev/null && [[ $GPG_CHECK != true ]]; then
-		export GPG_CHECK=true
-		wsl_load_key
-		unset GPG_CHECK
-		if gpg --card-status; then
-			printf 'Yubikey loaded successfully.\n'
-		else
-			printf 'ERROR: Yubikey not detected.\n'
-		fi
-	else
-		printf 'Yubikey loaded successfully.\n'
+	# Seems to not work unless loaded in powershell first
+	printf 'Waiting on powershell...'
+	wsl_spinner ps || return 1
+	printf 'Loading yubikey with GPG...'
+	if ! wsl_spinner; then
+		# Sometimes it just fails the first time, so try again.
+		printf 'Trying again...'
+		wsl_spinner || return 1
 	fi
+	return 0
 }
