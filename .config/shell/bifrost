@@ -41,6 +41,7 @@ bifrost () {
 		sleep 0.01s
 	done
 	tput sgr0
+	tput cnorm
 
 	# Update tty for password entry
 	echo UPDATESTARTUPTTY | gpg-connect-agent &>/dev/null
