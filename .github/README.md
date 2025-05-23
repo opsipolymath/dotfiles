@@ -1,4 +1,4 @@
-# opsiplydots
+# opsipolydots
 Personal dotfiles for opsipolymath.
 
 Note that this repo is always a work in progress and is for personal use only. Feel free to fork and use at your own risk; no attribution is needed and no warranty is made or implied.
