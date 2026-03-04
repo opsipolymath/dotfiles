@@ -70,7 +70,7 @@ set_prompt () {
 	PROMPT="%B${PROMPT_TOP}%b"$'\n'"%B${PROMPT_BOTTOM}%b"
 
 	# Setup RPROMPT if in an SSH session
-	if [[ -n "$SSH_TTY" ]]; then
+	if [[ -n "$SSH_TTY" && -z "$TMUX" ]]; then
 		RPROMPT='%B%F{blue}[%F{green}via %F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}]%f%b'
 	fi
 
