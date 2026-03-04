@@ -6,7 +6,7 @@
 # Main configuration file for sh, bash and zsh
 
 # If not bash or zsh, do nothing
-[[ ! $0 =~ (bash|zsh) ]] && return 1
+#[[ ! $0 =~ (bash|zsh) ]] && return 1
 
 # Setup directories
 source "${HOME}"/.config/user-dirs.dirs
@@ -29,8 +29,8 @@ export SAVEHIST=200000
 	colorize 2>/dev/null
 
 # Load bash configuratio
-# NB ${BDOTDIR} should be set by /etc/bash.bashrc
-if [[ $0 =~ bash ]]; then
+if [[ -n "$BASH_VERSION" ]]; then
+	export BDOTDIR="${BDOTDIR:-$HOME/.config/shell/bash}"
 	if [[ ! -d "${BDOTDIR}" ]]; then
 		error '${BDOTDIR} does not exist'
 		return
@@ -39,8 +39,7 @@ if [[ $0 =~ bash ]]; then
 fi
 
 # Load zsh configuration
-# NB ${ZDOTDIR} should be set by /etc/zsh/zshenv
-if [[ $0 =~ zsh  ]]; then
+if [ -n "${ZSH_VERSION-}" ]; then
 	[[ -n "${ZDOTDIR}" ]] &&
 	[[ -d "${ZDOTDIR}" ]] &&
 	source "${ZDOTDIR}"/zshrc
