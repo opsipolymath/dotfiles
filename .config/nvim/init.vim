@@ -319,6 +319,9 @@ tmap <C-k> <C-\><C-N><C-k>
 tnoremap <Esc> <C-\><C-n>
 tnoremap <silent><C-D> <C-D><C-\><C-N>ZQ
 
+" Let :we do :w then :e
+nnoremap :we :w<CR>:e<CR>
+
 " ---- Keymaps }}}
 
 " ---- Vimwiki {{{
