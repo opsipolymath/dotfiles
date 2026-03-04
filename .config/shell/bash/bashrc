@@ -25,7 +25,7 @@ export HISTCONTROL=ignoreboth:erasedups
 shopt -s histappend
 
 # Sync history after each command
-PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -c; history -r"
+PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -n"
 
 # Load bash-specific modules
 source "${BDOTDIR}"/keybinds
