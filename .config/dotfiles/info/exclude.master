@@ -95,6 +95,8 @@
 .config/shell/zsh/.zcompdump
 .config/tmux/plugins/
 .config/tmux/resurrect/
+.config/vim/.netrwhist
+.config/vim/autoload/
 .config/zsh/.histfile
 .config/zsh/.zcompdump
 .config/zsh/zmodules-enabled/
