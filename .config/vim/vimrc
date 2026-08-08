@@ -1,7 +1,85 @@
+" Optional Plugin Layer -------------------------------------------------------
+function! s:LoadPlugins() abort
+  let l:config_home = empty($XDG_CONFIG_HOME)
+        \ ? expand('~/.config')
+        \ : expand($XDG_CONFIG_HOME)
+
+  let l:data_home = empty($XDG_DATA_HOME)
+        \ ? expand('~/.local/share')
+        \ : expand($XDG_DATA_HOME)
+
+  let l:plug_vim = l:config_home . '/vim/autoload/plug.vim'
+  let l:plugged_dir = l:data_home . '/vim/plugged'
+  let l:installed_plug = 0
+
+  if !filereadable(l:plug_vim)
+    let l:output = system([
+          \ 'curl',
+          \ '-fsSLo', l:plug_vim,
+          \ '--create-dirs',
+          \ 'https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim'
+          \ ])
+
+    if v:shell_error
+      echohl ErrorMsg
+      echom 'vim-plug install failed:'
+      echom l:output
+      echohl None
+      return
+    endif
+
+    if !filereadable(l:plug_vim)
+        echom 'vim-plug install failed; skipping optional plugins'
+        return
+    endif
+
+    let l:installed_plug = 1
+  endif
+
+  execute 'source' fnameescape(l:plug_vim)
+
+  call plug#begin(l:plugged_dir)
+    Plug 'junegunn/fzf'
+    Plug 'junegunn/fzf.vim'
+    Plug 'junegunn/vim-easy-align'
+    Plug 'preservim/nerdtree'
+    Plug 'ap/vim-css-color'
+    Plug 'lervag/vimtex'
+    Plug 'thisisrandy/vim-outdated-plugins'
+    "Plug 'arcticicestudio/nord-vim'
+  call plug#end()
+
+  if l:installed_plug
+    augroup PlugBootstrap
+      autocmd!
+      autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
+    augroup END
+  endif
+endfunction
+
+let s:plugin_hosts = [
+      \ 'jarnvidr',
+      \ 'valhalla',
+      \ ]
+
+let s:load_plugins = index(s:plugin_hosts, hostname()) >= 0
+if s:load_plugins
+  call s:LoadPlugins()
+endif
+
 " General Settings ------------------------------------------------------------
 
 " automatically reload vimrc
 autocmd! bufwritepost vimrc source ~/.config/vim/vimrc
+
+" Enable True Color (24-bit RGB) support in Vim
+if has('termguicolors')
+  set termguicolors
+endif
+
+"colorscheme nord
+set background=dark
+hi Visual cterm=inverse ctermfg=green
 
 " tun on syntax highlighting
 syntax enable
@@ -92,8 +170,8 @@ set showmatch
 
 " disable automatic commenting on newline
 augroup autocomments
-	autocmd!
-	autocmd FileType * set fo-=c fo-=r fo-=o
+  autocmd!
+  autocmd FileType * set fo-=c fo-=r fo-=o
 augroup END
 
 " use an undofile
@@ -110,10 +188,10 @@ set clipboard^=unnamed,unnamedplus
 
 " fix home/end
 if $TERM =~ '^screen-256color'
-    map <Esc>OH <Home>
-    map! <Esc>OH <Home>
-    map <Esc>OF <End>
-    map! <Esc>OF <End>
+  map <Esc>OH <Home>
+  map! <Esc>OH <Home>
+  map <Esc>OF <End>
+  map! <Esc>OF <End>
 endif
 
 " navigate displayed lines instead of physical lines
@@ -151,38 +229,36 @@ iabbrev TODO (TODO[DN]:)<Left>
 
 " indentation
 augroup indentation
-	autocmd!
-	autocmd FileType c       setlocal shiftwidth=8 tabstop=8 softtabstop=8 expandtab
-	autocmd FileType md      setlocal shiftwidth=4 tabstop=4 softtabstop=4 expandtab
-	autocmd FileType html    setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
-	autocmd FileType scss    setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+  autocmd!
+  autocmd FileType c    setlocal shiftwidth=8 tabstop=8 softtabstop=8 expandtab
+  autocmd FileType md   setlocal shiftwidth=4 tabstop=4 softtabstop=4 expandtab
+  autocmd FileType html setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
+  autocmd FileType scss setlocal shiftwidth=2 tabstop=2 softtabstop=2 expandtab
 augroup END
 
 " line length warning
 augroup linelengthwarn
-	autocmd!
-	autocmd FileType md setlocal colorcolumn=
+  autocmd!
+  autocmd FileType md setlocal colorcolumn=
 augroup END
 
 " spelling
 augroup spelling
-	autocmd!
-	autocmd FileType c   setlocal nospell
-	autocmd FileType cpp setlocal nospell
-	autocmd FileType vim setlocal nospell
+  autocmd!
+  autocmd FileType c   setlocal nospell
+  autocmd FileType cpp setlocal nospell
+  autocmd FileType vim setlocal nospell
 augroup END
 
 
-" Embedded Nord Theme v0.19.0 -------------------------------------------------
-
-" Copyright (c) 2016-present Sven Greb <development@svengreb.de>
-" This source code is licensed under the MIT license found in the license file.
-
-if version > 580
-  hi clear
-  if exists("syntax_on")
-    syntax reset
-  endif
+"" Embedded Nord Theme v0.19.0 -------------------------------------------------
+"
+"" Copyright (c) 2016-present Sven Greb <development@svengreb.de>
+"" This source code is licensed under the MIT license found in the license file.
+"
+hi clear
+if exists("syntax_on")
+  syntax reset
 endif
 
 set background=dark
@@ -220,28 +296,28 @@ let s:nord14_term = "2"
 let s:nord15_term = "5"
 
 let s:nord3_gui_brightened = [
-  \ s:nord3_gui,
-  \ "#4e586d",
-  \ "#505b70",
-  \ "#525d73",
-  \ "#556076",
-  \ "#576279",
-  \ "#59647c",
-  \ "#5b677f",
-  \ "#5d6982",
-  \ "#5f6c85",
-  \ "#616e88",
-  \ "#63718b",
-  \ "#66738e",
-  \ "#687591",
-  \ "#6a7894",
-  \ "#6d7a96",
-  \ "#6f7d98",
-  \ "#72809a",
-  \ "#75829c",
-  \ "#78859e",
-  \ "#7b88a1",
-\ ]
+      \ s:nord3_gui,
+      \ "#4e586d",
+      \ "#505b70",
+      \ "#525d73",
+      \ "#556076",
+      \ "#576279",
+      \ "#59647c",
+      \ "#5b677f",
+      \ "#5d6982",
+      \ "#5f6c85",
+      \ "#616e88",
+      \ "#63718b",
+      \ "#66738e",
+      \ "#687591",
+      \ "#6a7894",
+      \ "#6d7a96",
+      \ "#6f7d98",
+      \ "#72809a",
+      \ "#75829c",
+      \ "#78859e",
+      \ "#7b88a1",
+      \ ]
 
 let g:nord_bold = get(g:, "nord_bold", 1)
 let s:bold = (g:nord_bold == 0) ? "" : "bold,"
@@ -319,7 +395,24 @@ call s:hi("VisualNOS", "", s:nord2_gui, "", s:nord1_term, "", "")
 
 "+- Vim 8 Terminal Colors -+
 if has('terminal')
-  let g:terminal_ansi_colors = [s:nord1_gui, s:nord11_gui, s:nord14_gui, s:nord13_gui, s:nord9_gui, s:nord15_gui, s:nord8_gui, s:nord5_gui, s:nord3_gui, s:nord11_gui, s:nord14_gui, s:nord13_gui, s:nord9_gui, s:nord15_gui, s:nord7_gui, s:nord6_gui]
+  let g:terminal_ansi_colors = [
+        \ s:nord1_gui,
+        \ s:nord11_gui,
+        \ s:nord14_gui,
+        \ s:nord13_gui,
+        \ s:nord9_gui,
+        \ s:nord15_gui,
+        \ s:nord8_gui,
+        \ s:nord5_gui,
+        \ s:nord3_gui,
+        \ s:nord11_gui,
+        \ s:nord14_gui,
+        \ s:nord13_gui,
+        \ s:nord9_gui,
+        \ s:nord15_gui,
+        \ s:nord7_gui, 
+        \ s:nord6_gui,
+        \ ]
 endif
 
 if has('nvim')
@@ -800,10 +893,10 @@ call s:hi("ClapNoMatchesFound", s:nord13_gui, "", s:nord13_term, "", "", "")
 call s:hi("ClapSelected", s:nord7_gui, "", s:nord7_term, "", s:bold, "")
 call s:hi("ClapSelectedSign", s:nord9_gui, "", s:nord9_term, "", "", "")
 let s:clap_matches = [
-        \ [s:nord8_gui,  s:nord8_term] ,
-        \ [s:nord9_gui,  s:nord9_term] ,
-        \ [s:nord10_gui, s:nord10_term] ,
-        \ ]
+      \ [s:nord8_gui,  s:nord8_term] ,
+      \ [s:nord9_gui,  s:nord9_term] ,
+      \ [s:nord10_gui, s:nord10_term] ,
+      \ ]
 for s:nord_clap_match_i in range(1,12)
   let clap_match_color = s:clap_matches[s:nord_clap_match_i % len(s:clap_matches) - 1]
   call s:hi("ClapMatches" . s:nord_clap_match_i, clap_match_color[0], "", clap_match_color[1], "", "", "")
