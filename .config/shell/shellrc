@@ -9,6 +9,7 @@
 #[[ ! $0 =~ (bash|zsh) ]] && return 1
 
 # Setup directories
+xdg-user-dirs-update
 source "${HOME}"/.config/user-dirs.dirs
 SHELL_HOME="${HOME}"/.config/shell
 export SHELL_HOME

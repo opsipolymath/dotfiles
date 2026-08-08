@@ -28,14 +28,14 @@ export LS_COLORS='no=00:rs=0:fi=00:di=01;34:ln=36:mh=04;36:pi=04;01;36:so=04;33:
 export ZLSCOLORS="${LS_COLORS}"
 
 # Set environment variables for specific applicatoins
-export DIFFPROG="/usr/bin/nvim -d"
-export EDITOR="/usr/bin/nvim"
+export DIFFPROG="/usr/bin/vim -d"
+export EDITOR="/usr/bin/vim"
 export GIT_SSH_COMMAND="/usr/bin/ssh -F \"$XDG_CONFIG_HOME/ssh/config\""
 export LESS=eFRX
 export LESSHISTFILE=-
 export PAGER="/usr/bin/less"
 export QT_QPA_PLATFORMTHEME=qt5ct
-export VISUAL="/usr/bin/nvim"
+export VISUAL="/usr/bin/vim"
 
 # LaTeX-related
 export TEXMFHOME="${XDG_DATA_HOME}/texmf"
