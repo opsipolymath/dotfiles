@@ -5,8 +5,8 @@
 # Keybindings for consoles/ssh
 
 # Load the modules for searching and completions
-autoload -U  up-line-or-beginning-search
-autoload -U  down-line-or-beginning-search
+autoload -U up-line-or-beginning-search
+autoload -U down-line-or-beginning-search
 zmodload zsh/complist
 
 # Create widgets to enable searching with arrow keys

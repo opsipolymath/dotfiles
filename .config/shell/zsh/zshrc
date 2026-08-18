@@ -22,6 +22,26 @@ setopt autocd autopushd pushdsilent pushdtohome
 bindkey -v
 export KEYTIMEOUT=10
 
+# Enable zsh hooks
+autoload -Uz add-zsh-hook
+
+# Sync history after each command
+# Note in ZSH, this requires ensuring no metadata is kept when sharing a 
+# histfile with bash, which is why SHARE_HISTORY is not used and instead
+# a precmd hook is added
+unsetopt EXTENDED_HISTORY SHARE_HISTORY
+setopt INC_APPEND_HISTORY
+__sync_history() {
+	fc -R "$HISTFILE"
+}
+add-zsh-hook precmd __sync_history
+
+# Refresh TTY before every command
+__update_gpg_tty() {
+    echo UPDATESTARTUPTTY | gpg-connect-agent &>/dev/null
+}
+add-zsh-hook preexec __update_gpg_tty
+
 # Load zsh-specific modules
 source "${ZDOTDIR}"/completion
 source "${ZDOTDIR}"/keybinds

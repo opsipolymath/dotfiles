@@ -27,6 +27,12 @@ shopt -s histappend
 # Sync history after each command
 PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -n"
 
+# Update gpg TTY before every command is run
+__update_gpg_tty() {
+    echo UPDATESTARTUPTTY | gpg-connect-agent &>/dev/null
+}
+trap '__update_gpg_tty' DEBUG
+
 # Load bash-specific modules
 source "${BDOTDIR}"/keybinds
 source "${BDOTDIR}"/prompt
