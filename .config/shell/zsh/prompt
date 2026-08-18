@@ -22,14 +22,9 @@ PROMPT_GIT_CHANGES() {
 	G_CHANGES="$(git_cmd status --porcelain=v1 2>/dev/null | wc -l)"
 	printf '%s' "${PROMPT_SPLIT}"
 	if (( G_CHANGES > 0 )); then
-		printf '%s' "%F{red}"
-		if [[ "${TERM}" == "linux" ]]; then
-			printf 'unclean'
-		else
-			printf '%sclean%s%s' $'\e[9m' "$( tput sgr0 )" '%f'
-		fi
+		printf '%sdirty%s' "%F{red}" "$f"
 	else
-		printf '%s' "%F{green}clean%f"
+		printf '%sclean%s' "%F{green}" "%f" 
 	fi
 }
 
@@ -49,8 +44,23 @@ PROMPT_GIT() {
 	PROMPT_GIT_CHANGES
 }
 
+# Return the host portion of the prompt string
+PROMPT_HOST() {
+	# Show monochrome when not SSH, or when SSH but not in TMUX
+	if [[ -z "$SSH_TTY" || -z "$TMUX" ]]; then
+		printf "%s" "$(hostname)"
+		return
+	fi
+	PROMPT_HNAME="$(hostname)"
+	COLOURS="132465"
+	for (( i=0; i<${#PROMPT_HNAME}; i++ )); do
+		printf '%%{%s%%}' "$(tput setaf ${COLOURS:$(( i % ${#COLOURS} )):1})"
+		printf '%s' "${PROMPT_HNAME:$i:1}"
+	done
+}
+
 set_prompt () {
-	unset PROMPT RPROMPT
+	unset PROMPT RPROMPT RPS1
 
 	PROMPT_TOP="%F{blue}┌["
 	PROMPT_BOTTOM="%F{blue}└["
@@ -63,25 +73,26 @@ set_prompt () {
 
 	PROMPT_TOP+="${PROMPT_DIR}$(PROMPT_GIT)%F{blue}]"
 
-	# Display root in red, regular user in green
-	PROMPT_BOTTOM+="%(#.%F{red}odin%F{green}.%F{green}%n)@%m${PROMPT_CLOSE}"
+	## Display root in red, regular user in green
+	#PROMPT_BOTTOM+="%(#.%F{red}odin%F{green}.%F{green}%n)@%m${PROMPT_CLOSE}"
+	#PROMPT_BOTTOM+="%(#.%F{red}.%F{blue}) %# %f"
+	PROMPT_BOTTOM+="%(#.%F{red}odin%F{green}.%F{green}%n)@$(PROMPT_HOST)${PROMPT_CLOSE}"
 	PROMPT_BOTTOM+="%(#.%F{red}.%F{blue}) %# %f"
 
 	PROMPT="%B${PROMPT_TOP}%b"$'\n'"%B${PROMPT_BOTTOM}%b"
 
-	# Setup RPROMPT if in an SSH session
+	# Setup RPROMPT if in an SSH session but not in TMUX
 	if [[ -n "$SSH_TTY" && -z "$TMUX" ]]; then
 		RPROMPT='%B%F{blue}[%F{green}via %F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}]%f%b'
 	fi
 
-	# Set cursor to a block in vi mode, underline otherwise
-	echo -ne '\e[4 q'
-	if [[ "${KEYMAP}" == vicmd ]]; then
-		echo -ne '\e[2 q'
-	fi
-
 	# Reset visibility status
 	tput cnorm
+}
+
+set_prompt_test() {
+	PROMPT='%# '
+	unset RPROMPT RPS1
 }
 
 # Re-evaluate prompt when mode changes

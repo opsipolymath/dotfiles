@@ -38,11 +38,7 @@ PROMPT_GIT_CHANGES() {
 	G_CHANGES="$(git_cmd status --porcelain=v1 2>/dev/null | wc -l)"
 	printf '%s' "${PROMPT_SPLIT}"
 	if (( G_CHANGES > 0 )); then
-		if [[ "${TERM}" == "linux" ]]; then
-			printf '%sunclean%s' "${RED}" "${ALL_OFF}"
-		else
-			printf '%s%sclean%s' "${RED}" $'\e[9m' "${ALL_OFF}"
-		fi
+		printf '%sdirty%s' "${RED}" "${ALL_OFF}"
 	else
 		printf '%sclean%s' "${GREEN}" "${ALL_OFF}"
 	fi
