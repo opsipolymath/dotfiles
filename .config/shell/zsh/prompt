@@ -22,7 +22,7 @@ PROMPT_GIT_CHANGES() {
 	G_CHANGES="$(git_cmd status --porcelain=v1 2>/dev/null | wc -l)"
 	printf '%s' "${PROMPT_SPLIT}"
 	if (( G_CHANGES > 0 )); then
-		printf '%sdirty%s' "%F{red}" "$f"
+		printf '%sdirty%s' "%F{red}" "%f"
 	else
 		printf '%sclean%s' "%F{green}" "%f" 
 	fi
