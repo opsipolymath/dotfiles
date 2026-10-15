@@ -58,15 +58,16 @@ blueman-applet &
 playerctld daemon
 
 # Fix brave being stupid and thinking it's crashed constantly
-__brave_pref="${__base_config}/BraveSoftware/Brave-Browser/Default/Preferences"
-if ! pgrep -u "${USER}" brave && [ -f "${__brave_pref}" ]; then
-	__brave_pref="${__base_config}/BraveSoftware/Brave-Browser/Default/Preferences"
-	sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]\+"/"exit_type":"Normal"/' "${__brave_pref}"
-	unset __brave_pref
-fi
+#__brave_pref="${__base_config}/BraveSoftware/Brave-Browser/Default/Preferences"
+#if ! pgrep -u "${USER}" brave && [ -f "${__brave_pref}" ]; then
+#	__brave_pref="${__base_config}/BraveSoftware/Brave-Browser/Default/Preferences"
+#	sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]\+"/"exit_type":"Normal"/' "${__brave_pref}"
+#	unset __brave_pref
+#fi
 
 # Set permanent application positioning rules
-bspc rule -a "brave-browser"    desktop=^2 follow=on
+#bspc rule -a "brave-browser"    desktop=^2 follow=on
+bspc rule -a "Vivaldi-stable"   desktop=^2 follow=on
 bspc rule -a "paradox launcher" desktop=^3 follow=on  state=floating
 bspc rule -a "steamwebhelper"   desktop=^8
 bspc rule -a "steam"            desktop=^8
@@ -84,20 +85,20 @@ if [ -d "${__rule_dir}" ]; then
 fi
 
 # Set temporary applicatoin rules for startup
-bspc rule -a Brave-browser -o desktop=^2 follow=off
-bspc rule -a Alacritty     -o desktop=^1 follow=on
-bspc rule -a Spotify       -o desktop=^9 follow=off
+bspc rule -a Vivladi   -o desktop=^2 follow=off
+bspc rule -a Alacritty -o desktop=^1 follow=on
+#bspc rule -a Spotify   -o desktop=^9 follow=off
 
 # Startup user applications if not already running
-pgrep -u "${USER}" brave     >/dev/null 2>&1 || brave &
-pgrep -u "${USER}" spotify   >/dev/null 2>&1 || spotify &
+#pgrep -u "${USER}" brave     >/dev/null 2>&1 || brave &
+#pgrep -u "${USER}" spotify   >/dev/null 2>&1 || spotify &
 pgrep -u "${USER}" alacritty >/dev/null 2>&1 || alacritty &
 
 # Setup lockscreen and wallpaper
-xss-lock -- betterlockscreen --lock pixel -- \
-	 --greeter-text "Locked by ${USER^}." \
-	 --verif-text "" &
-feh --no-fehbg --bg-fill --randomize "${WALLPAPER_DIR}"/**
+#xss-lock -- betterlockscreen --lock pixel -- \
+#	 --greeter-text "Locked by ${USER^}." \
+#	 --verif-text "" &
+#feh --no-fehbg --bg-fill --randomize "${WALLPAPER_DIR}"/**
 
 # Define initial layouts
 for d in $(bspc query -D --names); do

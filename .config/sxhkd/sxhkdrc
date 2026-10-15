@@ -17,12 +17,15 @@ super + l
 # Open Alacritty
 super + shift + Return
 	/usr/bin/alacritty
-# Open Ranger
+# Open Yazi
 super + ctrl + Return
-	/usr/bin/alacritty -e ranger
+	/usr/bin/alacritty -e yazi
 # Open emacs
+#super + alt + Return
+#	/usr/bin/emacs
+# Open Vivladi
 super + alt + Return
-	/usr/bin/emacs
+	/usr/bin/vivaldi
 
 # -- Menus
 # Open the application menu
@@ -181,7 +184,7 @@ XF86AudioMute
 	pamixer -t
 # Mic mute
 XF86AudioMicMute
-	pamixer --source 1 -t
+	pamixer --default-source -t
 # Stop playing
 XF86AudioStop
 	playerctl stop
@@ -194,10 +197,6 @@ XF86AudioPrev
 # Next track
 XF86AudioNext
 	playerctl next
-# Decrease brightness
-XF86MonBrightnessDown
-	[[ $(xbacklight -get) -le 10 ]] && xbacklight -dec 1 || xbacklight -dec 5
-# Increase brightness
-XF86MonBrightnessUp
-	[[ $(xbacklight -get) -lt 10 ]] && xbacklight -inc 1 || xbacklight -inc 5
-
+# Brightness up/down
+{XF86MonBrightnessUp, XF86MonBrightnessDown}
+	brightnessctl set {5%+,5%-}

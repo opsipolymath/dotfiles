@@ -35,9 +35,6 @@ alias vi="/usr/bin/vim"
 alias se="/usr/bin/sudoedit"
 alias steam="/usr/bin/steam -nochatui -nofriendsui -silent"
 
-# Make startx use dbus properly
-alias startx='/usr/bin/dbus-launch --exit-with-session /usr/bin/startx "${XINITRC}" &>/dev/null'
-
 # Set ssh aliases to use custom config file if defined
 if [ -n "${SSH_CONFIG}" ]; then
 	alias ssh='/usr/bin/ssh -F "${SSH_CONFIG}"'
