@@ -16,7 +16,7 @@ __exit_code=$?
 # If no player is running, try to restart playerctl
 if [ ! "${__exit_code}" -eq 0 ]; then
 	killall playerctld
-	playerctld daemon
+	playerctld daemon &>/dev/null
 	__spotify_status=$(playerctl --player="spotify" status 2>/dev/null)
 	__exit_code=$?
 	if [ ! "${__exit_code}" -eq 0 ]; then
