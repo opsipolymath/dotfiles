@@ -8,6 +8,9 @@
 # If not bash or zsh, do nothing
 #[[ ! $0 =~ (bash|zsh) ]] && return 1
 
+# Setup PATH
+export PATH="${HOME}/.local/bin:$PATH"
+
 # Setup directories
 xdg-user-dirs-update
 source "${HOME}"/.config/user-dirs.dirs
