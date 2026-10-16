@@ -7,7 +7,7 @@
 super + slash
 	sxhkd-help
 # Lock the session
-super + l
+super + alt + l
 	loginctl lock-session
 # Take a screenshot
 @Print
@@ -29,11 +29,20 @@ super + alt + Return
 
 # -- Menus
 # Open the application menu
-super + a
+super + shift + r; a
+	rofi -show drun -theme launcher.rasi
+# Open the run menu
+super + shift + r; r
 	rofi -show run -theme launcher.rasi
+# Open the directory menu
+super + shift + r; d
+	rofi -show filebrowser -theme launcher.rasi
 # Open the window selection menu
-super + w
-	rofi -show window -theme launcher.rasi
+super + shift + r; c
+	rofi -show windowcd -theme launcher.rasi
+# Open the Wifi menu
+super + shift + r; w
+	rofi -show wifi -theme launcher.rasi
 # Open the power menu
 super + q
 	rofi-power
@@ -147,7 +156,7 @@ super + backslash
 super + shift + backslash
 	dunstctl close-all
 # Re-open last notification
-super + shift + alt backslash
+super + shift + alt + backslash
 	dunstctl history-pop
 # Execute notification action
 super + shift + grave
