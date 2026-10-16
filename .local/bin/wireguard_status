@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+for path in /sys/class/net/*; do
+    interface=${path##*/}
+
+    if [[ -f "$path/type" ]] &&
+       [[ $(<"$path/type") == 65534 ]]; then
+        printf ' \n'
+        exit 0
+    fi
+done
+
+# Explicitly clear the Polybar module
+printf '\n'
+exit 0

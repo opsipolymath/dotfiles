@@ -23,6 +23,7 @@ date         = ${colors.active}
 keyboard     = ${colors.active}
 music        = ${colors.active}
 network      = ${colors.active}
+wireguard    = ${colors.red}
 volume       = ${colors.active}
 mute         = ${colors.red}
 disconnected = ${colors.red}
@@ -49,12 +50,13 @@ tray-background = ${colors.faded}
 
 modules-left   = bspwm
 modules-center = media output
-modules-right  = wlan0 wlan1 xbacklight pulseaudio battery date
+modules-right  = wlan0 wlan1 wireguard xbacklight pulseaudio battery date
 tray-position  = right
 
 font-0 = JetBrains Mono Nerd Font:style=Regular:pixelsize=9:antialias=true;2
 font-1 = Material Design Icons:pixelsize=12:style=Regular;4
 font-2 = Junicode:style=Bold:pixelsize=12:antialias=true;3
+font-3 = JetBrains Mono Nerd Font:style=Regular:pixelsize=12:antialias=true;2
 
 wm-restack        = bspwm
 override-redirect = true
@@ -137,6 +139,18 @@ format-paused-background        = ${colors.background}
 label-song-margin   = 1
 label-song-maxlen   = 30
 label-song-ellipsis = true
+
+[module/wireguard]
+type = custom/script
+interval = 5
+format-prefix            = " "
+format-prefix-font       = 4
+;format-prefix-padding    = 1
+;format-prefix-margin     = 1
+format-prefix-foreground = ${colors.purple}
+format-prefix-background = ${colors.normal}
+format                   = <label>
+exec                     = ~/.local/bin/wireguard_status
 
 [module/eth]
 type      = internal/network
