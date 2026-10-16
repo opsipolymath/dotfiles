@@ -5,13 +5,14 @@
 @import "colors/nord.rasi"
 
 configuration {
-	modi:                  "run,drun,filebrowser,window,ssh,wifi:iwdrofimenu";
+	//modi:                  "drun,run,filebrowser,windowcd,ssh,wifi:iwdrofimenu";
+	modi:                  "drun,run,filebrowser,windowcd,ssh,wifi:iwdrofimenu";
 	show-icons:            true;
-	display-run:          "";
-	display-drun:           "";
+	display-drun:          "";
+	display-run:           "";
 	display-filebrowser:   "";
-	display-window:        "";
-	display-ssh:           "";
+	display-windowcd:      "";
+	//display-ssh:           "";
 	display-wifi:          "";
 	drun-display-format:   "{name}";
 	window-format:         "{w} · {c} · {t}";
