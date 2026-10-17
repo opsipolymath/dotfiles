@@ -1,0 +1,26 @@
+# shellcheck shell=bash
+# Small interactive functions that benefit from the current shell environment.
+# Git wrapper for the bare dotfiles repository.
+export DOTFILES="${DOTFILES:-${XDG_CONFIG_HOME:-${HOME}/.config}/dotfiles}"
+dotfiles() {
+	command git --git-dir="$DOTFILES" --work-tree="$HOME" "$@"
+}
+
+# Refresh the active YubiKey explicitly instead of probing hardware at startup.
+yku() {
+	command gpg-connect-agent 'scd serialno' 'learn --force' /bye
+}
+
+# Reuse any session; avoid nesting when already inside tmux.
+tmux() {
+	if (( $# == 0 )) || { (( $# == 1 )) && [[ $1 == a ]]; }; then
+		[[ -z ${TMUX:-} ]] || return 0
+		if command tmux has-session 2>/dev/null; then
+			command tmux attach-session
+		else
+			command tmux new-session
+		fi
+	else
+		command tmux "$@"
+	fi
+}

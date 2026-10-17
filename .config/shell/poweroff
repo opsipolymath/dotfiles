@@ -1,41 +1,22 @@
-#!/usr/bin/bash
-
-# ${SHELL_HOME}/poweroff
-#
-# Protect against accidental reboot or poweroff when connected via ssh
-
-# Helper function when confirmation is required
-POWEROFF_CONFIRM() {
-	warning "Connected via SSH"
-	ask "${1}"
-	if [[ -n "$ZSH_VERSION" ]]; then
-		read -k1 confirm
+# shellcheck shell=bash
+# Confirm remote shutdowns; preserve arguments and command exit status.
+shell_shutdown() {
+	local action=$1
+	shift
+	if [[ -z ${SSH_CONNECTION:-}${SSH_TTY:-} ]]; then
+		"/usr/bin/${action}" "$@"
+		return $?
+	fi
+	warning 'Connected via SSH'
+	if shell_confirm "Really ${action}? "; then
+		command sudo "/usr/bin/${action}" "$@"
 	else
-		read -rn1 confirm
+		msg2 'Cancelling'
 	fi
-	printf '\n'
-	if [[ "y" != "${confirm}" ]] && [[ "Y" != "${confirm}" ]]; then
-		return 1
-	fi
-	return 0
 }
-
-# If poweroff is called and connected via ssh, make sure this is intended
 poweroff() {
-	[[ -z "${SSH_TTY}" ]] && /usr/bin/poweroff
-	if ! POWEROFF_CONFIRM "Really poweroff? "; then
-		msg2 "Cancelling"
-		return 0
-	fi
-	sudo /usr/bin/poweroff
+	shell_shutdown poweroff "$@"
 }
-
-# If reboot is called and connected via ssh, make sure this is intended
 reboot() {
-	[[ -z "${SSH_TTY}" ]] && /usr/bin/reboot
-	if ! POWEROFF_CONFIRM "Really reboot? "; then
-		msg2 "Cancelling"
-		return 0
-	fi
-	sudo /usr/bin/reboot
+	shell_shutdown reboot "$@"
 }

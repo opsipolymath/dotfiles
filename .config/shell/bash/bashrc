@@ -1,38 +1,35 @@
-#!/usr/bin/bash
-
-# ${BASHDOTIR}/bashrc
-#
-# Main rc file for bash shells
-# Loaded only for interactice shells
-
-# Report errors if glob doesn't match anything
-shopt -s failglob
-
-# Notify of job completion immediately
+# shellcheck shell=bash
+# Bash options, history, Readline, and prompt hooks.
+shopt -s failglob histappend
 set -b
-
-# Disable audible bell
+set -o vi
 bind 'set bell-style visible'
+bind -m vi-insert '"\C-l":clear-screen'
+HISTCONTROL=ignoreboth:erasedups
+HISTFILESIZE=200000
 
-# Use vi mode, but still let CTRL+l clear the screen
-set  -o vi
-bind -m vi-insert "\C-l":clear-screen
-
-# History ignores leading spaces and only keeps latest duplicate
-export HISTCONTROL=ignoreboth:erasedups
-
-# Append history
-shopt -s histappend
-
-# Sync history after each command
-PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND$'\n'}history -a; history -n"
-
-# Update gpg TTY before every command is run
-__update_gpg_tty() {
-    echo UPDATESTARTUPTTY | gpg-connect-agent &>/dev/null
+shell_sync_history() {
+	history -a
+	history -n
 }
-trap '__update_gpg_tty' DEBUG
 
-# Load bash-specific modules
-source "${BDOTDIR}"/keybinds
-source "${BDOTDIR}"/prompt
+shell_read_char() {
+	IFS= read -r -n 1 "$1"
+}
+
+# Preserve existing scalar or array prompt commands and avoid duplicate hooks.
+if ! declare -p PROMPT_COMMAND 2>/dev/null | grep -q '^declare -a '; then
+	if [[ -n ${PROMPT_COMMAND:-} ]]; then
+		PROMPT_COMMAND=("$PROMPT_COMMAND")
+	else
+		PROMPT_COMMAND=()
+	fi
+fi
+if [[ " ${PROMPT_COMMAND[*]} " != *' shell_sync_history '* ]]; then
+	PROMPT_COMMAND+=(shell_sync_history)
+fi
+
+# shellcheck source=keybinds
+source "${BDOTDIR}/keybinds"
+# shellcheck source=prompt
+source "${BDOTDIR}/prompt"

@@ -1,7 +1,5 @@
 #!/bin/sh
 
-# ${XDG_CONFIG_HOME}/X11/xserverrc
-#
 # Defaults xserverrc
 
 exec /usr/bin/X -nolisten tcp "$@"

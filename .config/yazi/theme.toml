@@ -6,6 +6,6 @@ sep_outer = { open = "", close = "" }
 padding = { open = "", close = "" }
 
 [status]
-sep_left  = { open = "", close = "" }
+sep_left = { open = "", close = "" }
 sep_right = { open = "", close = "" }
 

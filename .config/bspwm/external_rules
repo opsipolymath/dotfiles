@@ -1,0 +1,46 @@
+#!/bin/sh
+
+window_id="${1?}"
+window_class="${2-}"
+window_instance="${3-}"
+steam_desktop="^8"
+spotify_desktop="^9"
+
+# Spotify: desktop 9 without switching desktops or taking focus.
+spotify_rule() {
+	printf 'desktop=%s follow=off focus=off\n' "${spotify_desktop}"
+}
+
+case "${window_class}:${window_instance}" in
+	Spotify:*|spotify:*|*:Spotify|*:spotify)
+		spotify_rule
+		exit 0
+		;;
+esac
+
+# Fall back to the process ID when Spotify's startup class is empty or generic.
+process_id="$(xprop -id "${window_id}" -notype _NET_WM_PID 2>/dev/null |
+	awk '$1 == "_NET_WM_PID" && $2 == "=" && $3 ~ /^[0-9]+$/ && $3 > 0 { print $3; exit }')"
+if [ -n "${process_id}" ]; then
+	process_name="$(ps -p "${process_id}" -o comm= 2>/dev/null)"
+	case "${process_name}" in
+		spotify|Spotify)
+			spotify_rule
+			exit 0
+			;;
+	esac
+fi
+
+# Steam: desktop 8 for unclassified windows with a Steam title.
+if [ -n "${window_class}" ]; then
+	exit 0
+fi
+
+window_name="$(xprop -id "${window_id}" WM_NAME 2>/dev/null)"
+case "${window_name}" in
+	*Steam*)
+		printf 'desktop=%s\n' "${steam_desktop}"
+		;;
+esac
+
+exit 0

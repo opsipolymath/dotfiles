@@ -1,28 +1,27 @@
-#!/bin/bash
-
-# Starts all required sockets and applications to enable yubikey in WSL.
-# Requires gpg and pageant installed on windows host
-wsl_spinner() {
+# shellcheck shell=bash
+# Explicitly invoked WSL/YubiKey helpers; never launch bridges during startup.
+wsl_spinner() (
+	local gpg_command=/usr/bin/gpg pid exit_code i=0 spinner='/-\|'
+	[[ ${1:-} == ps ]] && gpg_command='/mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe'
+	trap 'tput cnorm' EXIT
+	trap '[[ -z $pid ]] || kill "$pid" 2>/dev/null; exit 130' INT
+	trap '[[ -z $pid ]] || kill "$pid" 2>/dev/null; exit 143' TERM
 	tput civis
-	gpg_cmd="/usr/bin/gpg"
-	if [[ "$1" == "ps" ]]; then
-		gpg_cmd="/mnt/c/Program Files (x86)/GnuPG/bin/gpg.exe"
-	fi
-	set +m
-	{ "${gpg_cmd}" --card-status &>/dev/null & } 2>/dev/null
+	"$gpg_command" --card-status >/dev/null 2>&1 &
 	pid=$!
-	i=1; retval=0
-	spinner='/-\|'
 	printf '  '
-	while kill -0 "${pid}" &>/dev/null; do
-		printf "\b${spinner:((i++%4)):1}"
+	while kill -0 "$pid" 2>/dev/null; do
+		printf '\b%s' "${spinner:i%4:1}"
+		i=$((i + 1))
 		sleep 0.1
 	done
-	wait "${pid}"
-	retval=$?
-	set -m
+	if wait "$pid"; then
+		exit_code=0
+	else
+		exit_code=$?
+	fi
 	tput cnorm
-	if [[ "${retval}" == 0 ]]; then
+	if (( exit_code == 0 )); then
 		printf '\bDone.'
 	else
 		printf '\bFailed.'
@@ -30,34 +29,35 @@ wsl_spinner() {
 	sleep 0.7
 	tput cr
 	tput el
-	return "${retval}"
-}
+	return "$exit_code"
+)
 
 wsl_load_key() {
-	pageant_bin="$HOME"/.config/ssh/wsl2-ssh-pageant.exe
-	[[ ! -x "$pageant_bin" ]] &&
-		echo >&2 "ERROR: ${pageant_bin} is not executable." &&
-		unset pageant_bin &&
-		return
-
-	export SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket)
-	export GPG_AGENT_SOCK=$(gpgconf --list-dirs agent-socket)
-	[[ "${SSH_AUTH_SOCK}" == "" || "${GPG_AGENT_SOCK}" == "" ]] &&
-		echo >&2 "ERROR: Socket variables are incorrect." &&
-		return
-	rm -rf "$SSH_AUTH_SOCK"
-	rm -rf "$GPG_AGENT_SOCK"
-	setsid nohup socat UNIX-LISTEN:"$SSH_AUTH_SOCK,fork" EXEC:"$pageant_bin" &>/dev/null
-	setsid nohup socat UNIX-LISTEN:"$GPG_AGENT_SOCK,fork" EXEC:"$pageant_bin -gpgConfigBasepath 'C:/Users/DN/AppData/Local/gnupg' -gpg S.gpg-agent" &>/dev/null
-
-	# Seems to not work unless loaded in powershell first
-	printf 'Waiting on powershell...'
+	local pageant_bin="${XDG_CONFIG_HOME:-${HOME}/.config}/ssh/wsl2-ssh-pageant.exe"
+	if [[ ! -x $pageant_bin ]]; then
+		error "${pageant_bin} is not executable"
+		return 1
+	fi
+	SSH_AUTH_SOCK=$(gpgconf --list-dirs agent-ssh-socket) || return 1
+	GPG_AGENT_SOCK=$(gpgconf --list-dirs agent-socket) || return 1
+	export SSH_AUTH_SOCK GPG_AGENT_SOCK
+	if [[ -z $SSH_AUTH_SOCK || -z $GPG_AGENT_SOCK ]]; then
+		error 'Socket variables are empty'
+		return 1
+	fi
+	# Remove only stale socket files, never recursively remove a supplied path.
+	if [[ -e $SSH_AUTH_SOCK && ! -S $SSH_AUTH_SOCK || -e $GPG_AGENT_SOCK && ! -S $GPG_AGENT_SOCK ]]; then
+		error 'An agent socket path refers to a non-socket file'
+		return 1
+	fi
+	command rm -f -- "$SSH_AUTH_SOCK" "$GPG_AGENT_SOCK" || return 1
+	setsid nohup socat "UNIX-LISTEN:${SSH_AUTH_SOCK},fork" "EXEC:'${pageant_bin}'" >/dev/null 2>&1 &
+	setsid nohup socat "UNIX-LISTEN:${GPG_AGENT_SOCK},fork" "EXEC:'${pageant_bin}' -gpgConfigBasepath 'C:/Users/DN/AppData/Local/gnupg' -gpg S.gpg-agent" >/dev/null 2>&1 &
+	printf 'Waiting on PowerShell...'
 	wsl_spinner ps || return 1
-	printf 'Loading yubikey with GPG...'
+	printf 'Loading YubiKey with GPG...'
 	if ! wsl_spinner; then
-		# Sometimes it just fails the first time, so try again.
 		printf 'Trying again...'
 		wsl_spinner || return 1
 	fi
-	return 0
 }

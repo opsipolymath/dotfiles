@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+# shellcheck shell=bash
 # Source from Bash initialization; do not execute as a standalone script.
 
 # Bash requires \[...\] around every nonprinting sequence in PS1.
@@ -9,64 +9,9 @@ PROMPT_BLUE='\[\e[34m\]'
 PROMPT_RESET='\[\e[0m\]'
 PROMPT_SPLIT="${PROMPT_BLUE}]─["
 
-prompt_git_changes() {
-	local ahead behind changes
-	local -a git_command=("$@")
-
-	ahead="$("${git_command[@]}" rev-list --count '@{u}..HEAD' 2>/dev/null)"
-	behind="$("${git_command[@]}" rev-list --count 'HEAD..@{u}' 2>/dev/null)"
-	[[ $ahead =~ ^[0-9]+$ ]] || ahead=0
-	[[ $behind =~ ^[0-9]+$ ]] || behind=0
-
-	if (( ahead || behind )); then
-		printf '%s' "${PROMPT_SPLIT}"
-		(( ahead )) && printf '%s%s' "${PROMPT_GREEN}" "$ahead"
-		(( behind )) && printf '%s%s' "${PROMPT_RED}" "$behind"
-	fi
-
-	changes="$("${git_command[@]}" status --porcelain=v1 2>/dev/null)"
-	if [[ -n $changes ]]; then
-		printf '%s%sdirty' "${PROMPT_SPLIT}" "${PROMPT_RED}"
-	else
-		printf '%s%sclean' "${PROMPT_SPLIT}" "${PROMPT_GREEN}"
-	fi
-}
-
-prompt_git() {
-	if command git rev-parse --is-inside-work-tree &>/dev/null; then
-		prompt_git_changes git
-	else
-		case ${PWD}/ in
-			"${HOME}/"|"${HOME}/.config/"*|"${HOME}/.cache/"*|"${HOME}/.local/"*)
-				printf '%s%sdotfiles' "${PROMPT_SPLIT}" "${PROMPT_YELLOW}"
-				prompt_git_changes git --git-dir="${DOTFILES}" --work-tree="$HOME"
-				;;
-		esac
-	fi
-}
-
-prompt_battery() {
-	local battery=/sys/class/power_supply/BAT0
-	local status capacity color
-	[[ -z ${SSH_TTY:-} ]] || return 0
-	[[ -r ${battery}/status && -r ${battery}/capacity ]] || return 0
-
-	IFS= read -r status < "${battery}/status"
-	IFS= read -r capacity < "${battery}/capacity"
-	[[ $capacity =~ ^[0-9]+$ ]] || return 0
-
-	if (( capacity >= 100 )); then
-		color=$PROMPT_GREEN
-	elif (( capacity < 10 )); then
-		color=$PROMPT_RED
-	elif [[ $status == Charging ]]; then
-		color=$PROMPT_YELLOW
-	else
-		color=$PROMPT_RED
-	fi
-
-	printf '%s%s%%%s' "$color" "$capacity" "${PROMPT_SPLIT}"
-}
+PROMPT_PERCENT='%'
+# shellcheck source=../prompt
+source "${BDOTDIR}/../prompt"
 
 # Seven colour stops, matching the Zsh SSH indicator.
 prompt_ssh_indicator() {
@@ -80,7 +25,7 @@ prompt_ssh_indicator() {
 	for (( index = 0; index < ${#characters[@]}; index++ )); do
 		color=${colors[index]}
 		character=${characters[index]}
-		printf '\\[\\e[%sm\\]%s' "${color}" "${character}"
+		printf '\\[\\e[%sm\\]%s' "$color" "$character"
 	done
 }
 
@@ -106,9 +51,15 @@ prompt_update() {
 
 # Preserve pre-existing prompt hooks when PROMPT_COMMAND is an array or string.
 if ! declare -p PROMPT_COMMAND 2>/dev/null | grep -q '^declare -a '; then
-	PROMPT_COMMAND=("${PROMPT_COMMAND:-}")
+	if [[ -n ${PROMPT_COMMAND:-} ]]; then
+		PROMPT_COMMAND=("$PROMPT_COMMAND")
+	else
+		PROMPT_COMMAND=()
+	fi
 fi
-PROMPT_COMMAND+=(prompt_update)
+if [[ " ${PROMPT_COMMAND[*]} " != *' prompt_update '* ]]; then
+	PROMPT_COMMAND+=(prompt_update)
+fi
 
 PS2="${PROMPT_YELLOW}»···${PROMPT_BLUE}> ${PROMPT_RESET}"
 PS3=$'\e[34mMake a selection: \e[0m'

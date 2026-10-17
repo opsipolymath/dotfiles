@@ -1,5 +1,3 @@
-# ${XDG_CONFIG_HOME}/ncmpcpp/bindings
-#
 # Simple vim-like key bindings for ncmpcpp
 
 def_key "h"

@@ -1,6 +1,3 @@
-// ${XDG_CONFIG_HOME}/rofi/config.rasi
-//
-// Load nord theme for rofi
-
+// Global defaults; launcher shortcuts select their own themes.
 configuration {
 }

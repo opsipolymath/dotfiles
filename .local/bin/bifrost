@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Decorative SSH launcher; SSH configuration handles agent terminal refresh.
+error() {
+	printf 'ERROR: %s\n' "$*" >&2
+}
+usage() {
+	cat <<'HELP'
+Usage: bifrost [ssh-options] destination [command]
+       bifrost help
+
+Examples:
+  bifrost server
+  bifrost -p 2222 user@server
+  bifrost server uptime
+
+Uses SSH_CONFIG when defined and otherwise SSH's normal configuration.
+Animation is shown only on a terminal. SSH arguments and exit status pass through.
+Use `bifrost -- help` to connect to a host literally named help.
+HELP
+}
+_bifrost_animate() (
+	local color i
+	trap 'tput sgr0; tput cnorm' EXIT
+	trap 'exit 130' INT
+	trap 'exit 143' TERM
+	tput civis
+	tput sc
+	tput setaf 3
+	printf '%s' '   Heimdallr! Open the Bifröst!'
+	tput sgr0
+	sleep 0.7
+	tput rc
+	tput el
+	for color in 1 214 3 2 4 6 5; do
+		tput setaf "$color"
+		for (( i = 0; i < 4; i++ )); do
+			printf '%s' '≡'
+			sleep 0.03
+		done
+	done
+	sleep 0.7
+	for (( i = 28; i > 0; i-- )); do
+		tput cub 1
+		tput el
+		sleep 0.01
+	done
+)
+
+bifrost() {
+	if (( $# < 1 )); then
+		error 'Usage: bifrost [ssh-options] destination [command]'
+		return 1
+	fi
+	if [[ -t 1 && ${TERM:-dumb} != dumb ]]; then
+		_bifrost_animate || return $?
+	fi
+	if [[ -n ${SSH_CONFIG:-} ]]; then
+		command ssh -F "$SSH_CONFIG" "$@"
+	else
+		command ssh "$@"
+	fi
+}
+
+case ${1:-help} in
+	help|--help) usage ;;
+	*) bifrost "$@" ;;
+esac

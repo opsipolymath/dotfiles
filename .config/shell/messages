@@ -1,0 +1,53 @@
+# shellcheck shell=bash
+# Shared messaging helpers. Treat messages as data, never printf formats.
+shell_message() {
+	local kind=$1 text=$2 color='' prefix=''
+	case $kind in
+		msg) color=32; prefix='==> ' ;;
+		msg2) color=34; prefix='  -> ' ;;
+		ask) color=34; prefix=':: ' ;;
+		warning) color=33; prefix='==> WARNING: ' ;;
+		error) color=31; prefix='==> ERROR: ' ;;
+		plain) prefix='    ' ;;
+	esac
+	if [[ -t 1 && ${TERM:-dumb} != dumb && -n $color ]]; then
+		printf '\033[%sm%s\033[0m%s' "$color" "$prefix" "$text"
+	else
+		printf '%s%s' "$prefix" "$text"
+	fi
+	[[ $kind == ask ]] || printf '\n'
+	return 0
+}
+plain() {
+	shell_message plain "$*"
+}
+plainerr() {
+	plain "$@" >&2
+}
+msg() {
+	shell_message msg "$*"
+}
+msg2() {
+	shell_message msg2 "$*"
+}
+ask() {
+	shell_message ask "$*"
+}
+warning() {
+	shell_message warning "$*" >&2
+}
+error() {
+	shell_message error "$*" >&2
+}
+
+# shell_read_char is implemented by each shell's interactive configuration.
+shell_confirm() {
+	local reply
+	ask "$1"
+	if ! shell_read_char reply; then
+		printf '\n'
+		return 1
+	fi
+	printf '\n'
+	[[ $reply == [yY] ]]
+}

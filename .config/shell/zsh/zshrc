@@ -1,48 +1,29 @@
-#!/usr/bin/zsh
-
-# ${XDG_CONFIG_HOME}/shell/zsh/zshrc
-#
-# Main rc file for zsh shells
-# Loaded only for interactice shells
-
-# Report errors if glob doesn't match anything
-setopt nomatch
-
-# Notify of job completion immediately
-setopt notify
-
-# Disable audible bell
+# zsh options, history, ZLE, and prompt hooks.
+setopt nomatch notify
 unsetopt beep
 
-# Make traversing directories easier
-export DIRSTACKSIZE=12
+# Keep the existing zsh directory-stack conveniences.
+DIRSTACKSIZE=12
 setopt autocd autopushd pushdsilent pushdtohome
-
-# Use vi mode and shorten keyress timeout for mode changes
 bindkey -v
-export KEYTIMEOUT=10
+KEYTIMEOUT=10
+bindkey '^L' clear-screen
 
-# Enable zsh hooks
+SAVEHIST=200000
+setopt appendhistory incappendhistory histignorealldups histignorespace
+unsetopt sharehistory
+
+shell_sync_history() {
+	fc -RI "$HISTFILE"
+}
+
+shell_read_char() {
+	IFS= read -r -k 1 "$1"
+}
+
 autoload -Uz add-zsh-hook
+add-zsh-hook precmd shell_sync_history
 
-# Sync history after each command
-# Note in ZSH, this requires ensuring no metadata is kept when sharing a 
-# histfile with bash, which is why SHARE_HISTORY is not used and instead
-# a precmd hook is added
-unsetopt EXTENDED_HISTORY SHARE_HISTORY
-setopt INC_APPEND_HISTORY
-__sync_history() {
-	fc -R "$HISTFILE"
-}
-add-zsh-hook precmd __sync_history
-
-# Refresh TTY before every command
-__update_gpg_tty() {
-    echo UPDATESTARTUPTTY | gpg-connect-agent &>/dev/null
-}
-add-zsh-hook preexec __update_gpg_tty
-
-# Load zsh-specific modules
-source "${ZDOTDIR}"/completion
-source "${ZDOTDIR}"/keybinds
-source "${ZDOTDIR}"/prompt
+source "${ZDOTDIR}/completion"
+source "${ZDOTDIR}/keybinds"
+source "${ZDOTDIR}/prompt"

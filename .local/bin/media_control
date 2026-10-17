@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+# Prefer playing Spotify, then playing MPD, then paused Spotify, otherwise MPD.
+action=${1-}
+case "${action}" in
+	play-pause) mpd_action=toggle ;;
+	next) mpd_action=next ;;
+	previous) mpd_action=prev ;;
+	stop) mpd_action=stop ;;
+	*)
+		printf 'Usage: %s {play-pause|next|previous|stop}\n' "$0" >&2
+		exit 2
+		;;
+esac
+
+spotify_player=''
+while IFS= read -r player; do
+	[[ ${player} == spotify* ]] || continue
+	status=$(playerctl --player="${player}" status 2>/dev/null) || continue
+	if [[ ${status} == Playing ]]; then
+		exec playerctl --player="${player}" "${action}"
+	fi
+	if [[ ${status} == Paused && -z ${spotify_player} ]]; then
+		spotify_player=${player}
+	fi
+done < <(playerctl --list-all 2>/dev/null)
+
+if [[ -n ${spotify_player} ]]; then
+	mpd_status=$(mpc status 2>/dev/null)
+	if [[ ${mpd_status} != *'[playing]'* ]]; then
+		exec playerctl --player="${spotify_player}" "${action}"
+	fi
+fi
+
+exec mpc "${mpd_action}"

@@ -1,35 +1,29 @@
 #!/bin/sh
 
-# ${XDG_CONFIG_HOME}/X11/xinitrc
-#
 # Simple xinitrc to load global config files and start bspwm
 
-# Define configuration directory
-__x11_config="${XDG_CONFIG_HOME}"
-if [ -z "${XDG_CONFIG_HOME}" ]; then
-	__x11_config="${HOME}/.config/X11"
-fi
+x11_config_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/X11"
 
 # Load any global configurations
-__global_xinit_dir=/etc/X11/xinit/xinitrc.d
-if [ -d "${__global_xinit_dir}" ]; then
-	for f in "${__global_xinit_dir}"/*; do
-		[ -x "${f}" ] && . "${f}"
+global_xinit_dir=/etc/X11/xinit/xinitrc.d
+if [ -d "${global_xinit_dir}" ]; then
+	for startup_file in "${global_xinit_dir}"/*; do
+		[ -x "${startup_file}" ] && . "${startup_file}"
 	done
-	unset f
+	unset startup_file
 fi
 
 # Load any user configurations
-__user_xinit_dir="${__x11_config}/xinitrc.d"
-if [ -d "${__user_xinit_dir}" ]; then
-	for f in "${__user_xinit_dir}"/*; do
-		[ -x "${f}" ] && . "${f}"
+user_xinit_dir="${x11_config_dir}/xinitrc.d"
+if [ -d "${user_xinit_dir}" ]; then
+	for startup_file in "${user_xinit_dir}"/*; do
+		[ -x "${startup_file}" ] && . "${startup_file}"
 	done
-	unset f
+	unset startup_file
 fi
 
 # Unset variables
-unset __x11_config __global_xinit_dir __user_xinit_dir
+unset x11_config_dir global_xinit_dir user_xinit_dir
 
 # Launch window manager
-bspwm
+exec bspwm

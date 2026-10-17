@@ -1,4 +1,4 @@
-general.import = ["~/.config/alacritty/nord.toml", "~/.config/alacritty/keybinds.toml"]
+general.import = ["~/.config/alacritty/nord.toml"]
 general.live_config_reload = true
 
 [bell]
@@ -30,3 +30,8 @@ multiplier = 3
 [window]
 dynamic_title = true
 opacity = 1.0
+
+[[keyboard.bindings]]
+action = "None"
+key = "Space"
+mods = "Shift|Control"
