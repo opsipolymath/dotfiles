@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Polybar media: --icon (single result) or --text (continuous ticker).
+# Spotify via MPRIS; MPD via mpc, no MPD MPRIS bridge needed.
+
+mode=${1:---text}
+width=30
+frame_delay=0.5
+scroll_gap='   '
+
+format_time() {
+	local seconds=$1
+	if (( seconds >= 3600 )); then
+		printf '%d:%02d:%02d' "$((seconds / 3600))" "$((seconds / 60 % 60))" "$((seconds % 60))"
+	else
+		printf '%d:%02d' "$((seconds / 60))" "$((seconds % 60))"
+	fi
+}
+
+to_seconds() {
+	local value=$1 h=0 m=0 s=0
+	local -a parts
+	IFS=: read -r -a parts <<< "$value"
+	case ${#parts[@]} in
+		2) m=${parts[0]}; s=${parts[1]} ;;
+		3) h=${parts[0]}; m=${parts[1]}; s=${parts[2]} ;;
+		*) printf '0'; return ;;
+	esac
+	printf '%d' "$((10#$h * 3600 + 10#$m * 60 + 10#$s))"
+}
+
+get_spotify() {
+	local player raw artist song time_text
+	command -v playerctl >/dev/null 2>&1 || return 1
+	while IFS= read -r player; do
+		[[ $player == spotify* ]] || continue
+		[[ $(playerctl --player="$player" status 2>/dev/null) == Playing ]] || continue
+		source=spotify
+		if [[ $mode == --icon ]]; then
+			return 0
+		fi
+		raw=$(playerctl --player="$player" metadata \
+			--format $'{{ artist }}\x1f{{ title }}\x1f{{ duration(mpris:length - position) }}' \
+			2>/dev/null) || return 1
+		IFS=$'\x1f' read -r artist song time_text <<< "$raw"
+		title="${artist:-Unknown artist} - ${song:-Unknown title}"
+		remaining=${time_text:-?:??}
+		return 0
+	done < <(playerctl --list-all 2>/dev/null)
+	return 1
+}
+
+get_mpd() {
+	local output line artist song elapsed duration elapsed_seconds duration_seconds
+	command -v mpc >/dev/null 2>&1 || return 1
+	output=$(mpc status 2>/dev/null) || return 1
+	[[ $output == *'[playing]'* ]] || return 1
+	source=mpd
+	[[ $mode == --icon ]] && return 0
+
+	line=$(mpc current --format $'%artist%\x1f%title%' 2>/dev/null) || return 1
+	IFS=$'\x1f' read -r artist song <<< "$line"
+	title="${artist:-Unknown artist} - ${song:-Unknown title}"
+	remaining='?:??'
+	if [[ $output =~ ([0-9]+:[0-9]+(:[0-9]+)?)/([0-9]+:[0-9]+(:[0-9]+)?) ]]; then
+		elapsed=${BASH_REMATCH[1]}
+		duration=${BASH_REMATCH[3]}
+		elapsed_seconds=$(to_seconds "$elapsed")
+		duration_seconds=$(to_seconds "$duration")
+		if (( duration_seconds > 0 )); then
+			remaining=$(format_time "$((duration_seconds > elapsed_seconds ? duration_seconds - elapsed_seconds : 0))")
+		fi
+	fi
+	return 0
+}
+
+refresh() {
+	source=idle
+	title=''
+	remaining=''
+	get_spotify || get_mpd || :
+}
+
+case $mode in
+	--icon)
+		refresh
+		case $source in
+			spotify) printf '󰓇\n' ;;
+			    mpd) printf '󰐹\n' ;;
+			      *) printf '󰽳\n' ;;
+		esac
+		;;
+	--text)
+		old_track=''
+		offset=0
+		frame=0
+		while :; do
+			if (( frame % 2 == 0 )); then
+				refresh
+				track_id="$source:$title"
+				if [[ $track_id != "$old_track" ]]; then
+					offset=0
+					old_track=$track_id
+				fi
+			fi
+
+			if [[ $source == idle ]]; then
+				display='No music is currently playing'
+			else
+				full_text="$title [$remaining]"
+				if (( ${#full_text} <= width )); then
+					display=$full_text
+				else
+					loop="$full_text$scroll_gap"
+					display=${loop:offset:width}
+					if (( ${#display} < width )); then
+						display+=${loop:0:width-${#display}}
+					fi
+					offset=$(( (offset + 1) % ${#loop} ))
+				fi
+			fi
+
+			printf '%-*.*s\n' "$width" "$width" "$display"
+			frame=$((frame + 1))
+			sleep "$frame_delay"
+		done
+		;;
+	*)
+		printf 'Usage: %s [--icon|--text]\n' "$0" >&2
+		exit 2
+		;;
+esac

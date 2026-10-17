@@ -1,27 +1,41 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-# ${XDG_DATA_HOME}/bin/get_audio_output
-#
-# Outputs icon for pulseaudio current selected output port
+# Display headphones or speakers based on the default audio sink.
 
-# Check if using Schiit Fulla
-if pactl get-default-sink | grep -q 'Schiit\|bluez_sink'; then
-	printf '%%{R} 󰋎 '
-	exit
+headphones='󰋎'
+speakers='󱌈'
+
+# Identify the default sink.
+sink=$(pactl get-default-sink 2>/dev/null) || exit 0
+
+# USB DAC or Bluetooth output.
+if [[ $sink == *Schiit* || $sink == bluez_sink* ]]; then
+    printf '%%{R} %s \n' "$headphones"
+    exit 0
 fi
 
-# Check if running on headphone
-__active_port=$(
-	pactl list sinks |
-	grep -i 'active port' |
-	rev |
-	cut -d'-' -f1 |
-	rev )
+# Determine the active port of the default sink.
+port=$(
+    pactl list sinks 2>/dev/null |
+    awk -v sink="$sink" '
+        /^[[:space:]]*Name:/ {
+            active = ($2 == sink)
+        }
+        active && /^[[:space:]]*Active Port:/ {
+            print $3
+            exit
+        }
+    '
+)
 
-if [[ "${__active_port,,}" = "headphones" ]]; then
-	printf '%%{R} 󰋎 '
-	exit
-fi
+# Select icon.
+case "$port" in
+    *headphones* | *headset*)
+        icon=$headphones
+        ;;
+    *)
+        icon=$speakers
+        ;;
+esac
 
-# No headphones connected
-printf '%%{R} 󱌈 '
+printf '%%{R} %s \n' "$icon"
