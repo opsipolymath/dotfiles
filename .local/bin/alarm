@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Alarm management; at jobs call this executable's play verb.
+error() {
+	printf 'ERROR: %s\n' "$*" >&2
+}
+msg() {
+	printf '%s\n' "$*"
+}
+plain() {
+	printf '%s\n' "$*"
+}
+
+_alarm_jobs() {
+	command atq -q z
+}
+
+_alarm_list() {
+	local job_number job_details alarm_time jobs
+	jobs=$(_alarm_jobs) || return 1
+	while IFS=$'\t' read -r job_number job_details; do
+		[[ -n $job_number ]] || continue
+		alarm_time=$(printf '%s\n' "$job_details" | awk '{print $4}')
+		msg "Alarm ${job_number} at ${alarm_time}"
+	done <<< "$jobs"
+}
+
+_alarm_cancel() {
+	local target=${1:-all} job_number job_details alarm_time selected=
+	local count=0 jobs
+	jobs=$(_alarm_jobs) || return 1
+	while IFS=$'\t' read -r job_number job_details; do
+		[[ -n $job_number ]] || continue
+		alarm_time=$(printf '%s\n' "$job_details" | awk '{print substr($4,1,5)}')
+		if [[ $target == all || $target == "$job_number" || $target == "$alarm_time" ]]; then
+			if [[ $target == all ]]; then
+				command atrm "$job_number" || return 1
+				msg "Alarm ${job_number} cancelled"
+			else
+				selected=$job_number
+				count=$((count + 1))
+			fi
+		fi
+	done <<< "$jobs"
+	[[ $target == all ]] && return 0
+	if (( count != 1 )); then
+		error "Expected one matching alarm; found ${count}"
+		return 1
+	fi
+	command atrm "$selected" || return 1
+	msg "Alarm ${selected} cancelled"
+}
+
+_alarm_set() {
+	local alarm_file alarm_link alarm_time
+	if (( $# < 1 || $# > 2 )) || [[ ! $1 =~ ^([01][0-9]|2[0-3]):[0-5][0-9]$ ]]; then
+		error 'Usage: alarm set HH:MM [file]'
+		return 1
+	fi
+	alarm_time=$1
+	alarm_file=${2:-${XDG_DATA_HOME:-${HOME}/.local/share}/.alarm.mp3}
+	if [[ ! -f $alarm_file ]]; then
+		error "Alarm file does not exist: ${alarm_file}"
+		return 1
+	fi
+	command -v mpg123 >/dev/null 2>&1 || { error 'mpg123 is not installed'; return 1; }
+	alarm_file=$(realpath -- "$alarm_file") || return 1
+	alarm_link=$(realpath -- "${BASH_SOURCE[0]}") || return 1
+	# at executes /bin/sh. Single-quote arguments, including embedded apostrophes.
+	alarm_file=${alarm_file//\'/\'\\\'\'}
+	alarm_link=${alarm_link//\'/\'\\\'\'}
+	if ! printf "'%s' play '%s'\n" "$alarm_link" "$alarm_file" | command at -q z "$alarm_time"; then
+		error 'Unable to set alarm'
+		return 1
+	fi
+	plain 'Alarm set'
+}
+
+usage() {
+	cat <<'HELP'
+Usage: alarm COMMAND [ARGUMENTS]
+
+Commands:
+  set HH:MM [FILE]             Schedule playback (next occurrence of that time)
+  list                        List alarms in at queue z
+  cancel [all|JOB|HH:MM]       Cancel all alarms or one matching job/time
+  play FILE                   Play a file; also used by scheduled jobs
+  stop                        Stop playback launched through this command
+  help                        Show this help
+
+Examples:
+  alarm set 07:30
+  alarm set 12:00 "$HOME/Music/alarm.mp3"
+  alarm list
+  alarm cancel 12:00
+  alarm cancel all
+  alarm stop
+
+The default file is ${XDG_DATA_HOME:-$HOME/.local/share}/.alarm.mp3.
+Queue z is reserved for alarms. Scheduled jobs need this executable to remain
+at the same path. Playback is named ygg-alarm so stop does not kill other audio.
+HELP
+}
+
+main() {
+	local action=${1:-help}
+	(( $# == 0 )) || shift
+	case $action in
+		help|-h|--help) usage ;;
+		set) _alarm_set "$@" ;;
+		list)
+			(( $# == 0 )) || { error 'Usage: alarm list'; return 2; }
+			_alarm_list
+			;;
+		cancel)
+			(( $# <= 1 )) || { error 'Usage: alarm cancel [all|JOB|HH:MM]'; return 2; }
+			_alarm_cancel "${1:-all}"
+			;;
+		play)
+			(( $# == 1 )) || { error 'Usage: alarm play FILE'; return 2; }
+			# Keep an identifiable process name without creating an alarm symlink.
+			exec -a ygg-alarm mpg123 -- "$1"
+			;;
+		stop)
+			(( $# == 0 )) || { error 'Usage: alarm stop'; return 2; }
+			pkill -u "$(id -u)" -f '^ygg-alarm( |$)'
+			;;
+		*) error "Unknown command: ${action}"; usage >&2; return 2 ;;
+	esac
+}
+main "$@"

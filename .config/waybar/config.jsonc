@@ -43,16 +43,14 @@
 			"9": "ᚻ"
 		},
 		"persistent-workspaces": {
-//			"eDP-1": 9,
 			"eDP-1": 9
-//			"HDMI-A-1": 9
 		}
 	},
 	"custom/spotify#icon": {
 		"format": ""
 	},
 	"custom/spotify": {
-		"escape": "true",
+		"escape": true,
 		"exec": "${HOME}/.local/bin/scroll_spotify_status",
 		"format": "{}",
 		"max-length": 30,
@@ -64,7 +62,7 @@
 	},
 	"network#icon": {
 		"format-wifi": "",
-		"format-ehternet": "󰈀",
+		"format-ethernet": "󰈀",
 		"format-linked": "󰲛",
 		"format-disconnected": "󰖪",
 		"on-click": "iwgtk"
@@ -90,7 +88,9 @@
 			"phone": "",
 			"portable": "",
 			"car": "",
-			"default": ["󰕾"]
+			"default": [
+				"󰕾"
+			]
 		},
 		"on-click": "pactl set-sink-mute @DEFAULT_SINK@ toggle"
 	},
@@ -107,7 +107,13 @@
 	"temperature#icon": {
 		"critical-threshold": 80,
 		"format": "{icon}",
-		"format-icons": ["", "", "", "", ""]
+		"format-icons": [
+			"",
+			"",
+			"",
+			"",
+			""
+		]
 	},
 	"temperature": {
 		"critical-threshold": 80,
@@ -130,7 +136,13 @@
 		"format-full": "󰁹󱐋",
 		"format-charging": "{icon}󱐋",
 		"format-plugged": "{icon}󱐋",
-		"format-icons": ["󰂎", "󰁻", "󰁽", "󰁿", "󰂁"]
+		"format-icons": [
+			"󰂎",
+			"󰁻",
+			"󰁽",
+			"󰁿",
+			"󰂁"
+		]
 	},
 	"battery": {
 		"interval": 10,
@@ -153,18 +165,18 @@
 		"format-alt": "{:%d %b %Y}",
 		"tooltip-format": "<tt>{calendar}</tt>",
 		"calendar": {
-			"mode"          : "month",
-			"mode-mon-col"  : 3,
-			"weeks-pos"     : "",
-			"on-scroll"     : 1,
+			"mode": "month",
+			"mode-mon-col": 3,
+			"weeks-pos": "",
+			"on-scroll": 1,
 			"format": {
-				"months":     "<span color='#B48EAD'><b>{}</b></span>",
-				"days":       "<span color='#5E81AC'><b>{}</b></span>",
-				"weekdays":   "<span color='#D8DEE9'><b>{}</b></span>",
-				"today":      "<span color='#A3BE8C'><b>{}</b></span>"
+				"months": "<span color='#B48EAD'><b>{}</b></span>",
+				"days": "<span color='#5E81AC'><b>{}</b></span>",
+				"weekdays": "<span color='#D8DEE9'><b>{}</b></span>",
+				"today": "<span color='#A3BE8C'><b>{}</b></span>"
 			}
 		},
-		"actions":  {
+		"actions": {
 			"on-click-right": "mode"
 		}
 	},

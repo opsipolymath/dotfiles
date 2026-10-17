@@ -1,7 +1,3 @@
-# ${ZDOTDIR}/.zshrc
-#
-# Default rc file for zsh shells
-# Read only for interactive shells
-
-# Call actual default rc
-[[ -f "${ZDOTDIR}"/../shellrc ]] && source "${ZDOTDIR}"/../shellrc
+# Entry point for interactive zsh configuration.
+export SHELL_HOME="${ZDOTDIR}/.."
+source "${SHELL_HOME}/shellrc"

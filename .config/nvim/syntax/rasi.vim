@@ -2,7 +2,7 @@
 " Language: rofi configuration file
 
 if exists("b:current_syntax")
-  finish
+	finish
 endif
 
 " let b:main_syntax = 'css'

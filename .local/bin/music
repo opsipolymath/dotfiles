@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# ncmpcpp launcher with optional bspwm layout/visualizer integration.
+usage() {
+	cat <<'HELP'
+Usage: music [run [NCMPCPP-OPTIONS] | help]
+
+Examples:
+  music
+  music run
+  music run --host localhost
+
+Runs ncmpcpp normally outside bspwm. With BSPWM_SOCKET and bsp-layout present,
+switches to the wide layout, launches cava in Alacritty, and restores the layout
+on exit. Only the visualizer process launched here is stopped.
+HELP
+}
+cleanup_player() {
+	if [[ -n $visualizer_pid ]]; then
+		kill -- "-${visualizer_pid}" 2>/dev/null
+		wait "$visualizer_pid" 2>/dev/null
+	fi
+	bsp-layout set "$layout" >/dev/null 2>&1
+}
+
+run_player() (
+	local layout visualizer_pid=''
+	if [[ -z ${BSPWM_SOCKET:-} ]] || ! command -v bsp-layout >/dev/null 2>&1; then
+		command ncmpcpp -q "$@"
+		return $?
+	fi
+	layout=$(bsp-layout get) || return 1
+	trap 'cleanup_player' EXIT
+	trap 'exit 130' INT
+	trap 'exit 143' TERM
+	bsp-layout set wide >/dev/null 2>&1 || return 1
+	command setsid alacritty -e cava >/dev/null 2>&1 &
+	visualizer_pid=$!
+	sleep 0.5
+	bspc node -f 'prev.local.!hidden.window'
+	command ncmpcpp -q "$@"
+)
+
+case ${1:-run} in
+	help|-h|--help) usage ;;
+	run) (( $# == 0 )) || shift; run_player "$@" ;;
+	*) run_player "$@" ;;
+esac

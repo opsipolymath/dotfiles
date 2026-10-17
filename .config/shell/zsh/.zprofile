@@ -1,2 +1,4 @@
-[[ -f "${HOME}"/.config/shell/profile ]] &&
-	source "${HOME}"/.config/shell/profile
+# Optional login settings shared by shells.
+if [[ -r ${ZDOTDIR}/../profile ]]; then
+	source "${ZDOTDIR}/../profile"
+fi

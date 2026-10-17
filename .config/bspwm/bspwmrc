@@ -1,111 +1,81 @@
 #!/bin/sh
 
-# ${XDG_CONFIG_HOME}/bspwm/bspwmrc
-#
 # bspwm configuration.
 
-# Set relative locations and custom variables
-__base_config="${HOME}/.config"
-__bspwm_home="${__base_config}/bspwm"
-__env_dir="${__base_config}/environment.d"
-__rule_dir="${__bspwm_home}/rules"
-__polybar_bar="default"
-
-# Set environment variables
-if [ -d "${__env_dir}" ]; then
-	for __env_file in "${__env_dir}"/*; do
-		. "${__env_file}"
+# Source optional shell environment fragments before deriving application paths.
+config_home="${XDG_CONFIG_HOME:-${HOME}/.config}"
+environment_dir="${config_home}/environment.d"
+if [ -d "${environment_dir}" ]; then
+	for environment_file in "${environment_dir}"/*; do
+		[ -f "${environment_file}" ] && . "${environment_file}"
 	done
-	unset __env_file
+	unset environment_file
 fi
-# If XDG is configured, update all variables
-[ -n "${XDG_CONFIG_HOME}" ] && __base_config="${XDG_CONFIG_HOME}"
-__bspwm_home="${__base_config}/bspwm"
-__env_dir="${__base_config}/environment.d"
-__rule_dir="${__bspwm_home}/rules"
+config_home="${XDG_CONFIG_HOME:-${HOME}/.config}"
+bspwm_config_dir="${config_home}/bspwm"
+polybar_name="default"
 
 # Set X options for bspwm
 setxkbmap -option "ctrl:swapcaps"
-xsetroot  -cursor_name left_ptr
+xsetroot -cursor_name left_ptr
 
 # Set bspwm options
 bspc monitor -d ᚠ ᚢ ᚦ ᚩ ᚱ ᚳ ᚷ ᚹ ᚻ
-bspc config borderless_monocle   true
-bspc config single_monocle       true
-bspc config ignore_ewmh_focus    true
-bspc config gapless_monocle      false
-bspc config border_width         2
-bspc config split_ratio          0.52
+bspc config borderless_monocle true
+bspc config single_monocle true
+bspc config ignore_ewmh_focus true
+bspc config gapless_monocle false
+bspc config border_width 2
+bspc config split_ratio 0.52
 
 # Define colors
-xcolor() {
+xresource_color() {
 	xrdb -query | grep -E "^(bspwm|\*)\.${1}:" | tail -n 1 | awk '{print $2}'
 }
-xrdb "${__base_config}/X11/Xresources"
-bspc config window_gap           "$( xcolor gap )"
-bspc config top_padding          "$( xcolor panelGap )"
-bspc config focused_border_color "$( xcolor activeColor )"
-bspc config active_border_color  "$( xcolor normalColor )"
-bspc config normal_border_color  "$( xcolor normalColor )"
+xrdb "${config_home}/X11/Xresources"
+bspc config window_gap "$(xresource_color gap)"
+bspc config top_padding "$(xresource_color panelGap)"
+bspc config focused_border_color "$(xresource_color activeColor)"
+bspc config active_border_color "$(xresource_color normalColor)"
+bspc config normal_border_color "$(xresource_color normalColor)"
 
 # Start background helpers
-polybar -r "${__polybar_bar}" &
-lxpolkit       &
-picom          &
-sxhkd          &
-mpd-mpris      &
+polybar -r "${polybar_name}" &
+lxpolkit &
+picom &
+sxhkd &
 blueman-applet &
 playerctld daemon
 
-# Fix brave being stupid and thinking it's crashed constantly
-#__brave_pref="${__base_config}/BraveSoftware/Brave-Browser/Default/Preferences"
-#if ! pgrep -u "${USER}" brave && [ -f "${__brave_pref}" ]; then
-#	__brave_pref="${__base_config}/BraveSoftware/Brave-Browser/Default/Preferences"
-#	sed -i 's/"exited_cleanly":false/"exited_cleanly":true/; s/"exit_type":"[^"]\+"/"exit_type":"Normal"/' "${__brave_pref}"
-#	unset __brave_pref
-#fi
-
 # Set permanent application positioning rules
-#bspc rule -a "brave-browser"    desktop=^2 follow=on
-bspc rule -a "Vivaldi-stable"   desktop=^2 follow=on
-bspc rule -a "paradox launcher" desktop=^3 follow=on  state=floating
-bspc rule -a "steamwebhelper"   desktop=^8
-bspc rule -a "steam"            desktop=^8
-bspc rule -a "Emacs"                                  state=tiled
+bspc rule -a "Vivaldi-stable" desktop=^2 follow=on
+bspc rule -a "paradox launcher" desktop=^3 follow=on state=floating
+bspc rule -a "steamwebhelper" desktop=^8
+bspc rule -a "steam" desktop=^8
+bspc rule -a "Emacs" state=tiled
 
 # Move games to desktop 3
-bspc rule -a "eu4"           desktop=^3 follow=on  state=fullscreen
-bspc rule -a "RimWorldLinux" desktop=^3 follow=on  state=fullscreen
+bspc rule -a "eu4" desktop=^3 follow=on state=fullscreen
+bspc rule -a "RimWorldLinux" desktop=^3 follow=on state=fullscreen
 
-if [ -d "${__rule_dir}" ]; then
-	for __rule_file in "${__rule_dir}"/*; do
-		bspc config external_rules_command "${__rule_file}"
-	done
-	unset __rule_file
-fi
+# External window rules
+bspc config external_rules_command "${bspwm_config_dir}/external_rules"
 
-# Set temporary applicatoin rules for startup
-bspc rule -a Vivladi   -o desktop=^2 follow=off
+# Set temporary application rules for startup
+bspc rule -a Vivaldi-stable -o desktop=^2 follow=off focus=off
 bspc rule -a Alacritty -o desktop=^1 follow=on
-#bspc rule -a Spotify   -o desktop=^9 follow=off
 
 # Startup user applications if not already running
-#pgrep -u "${USER}" brave     >/dev/null 2>&1 || brave &
-#pgrep -u "${USER}" spotify   >/dev/null 2>&1 || spotify &
 pgrep -u "${USER}" alacritty >/dev/null 2>&1 || alacritty &
-
-# Setup lockscreen and wallpaper
-#xss-lock -- betterlockscreen --lock pixel -- \
-#	 --greeter-text "Locked by ${USER^}." \
-#	 --verif-text "" &
-#feh --no-fehbg --bg-fill --randomize "${WALLPAPER_DIR}"/**
+pgrep -u "${USER}" vivaldi >/dev/null 2>&1 || vivaldi &
+pgrep -u "${USER}" spotify >/dev/null 2>&1 || spotify &
 
 # Define initial layouts
-for d in $(bspc query -D --names); do
-	bsp-layout set tall "${d}" -- --master-size 0.6
+for desktop in $(bspc query -D --names); do
+	bsp-layout set tall "${desktop}" -- --master-size 0.6
 done
 bspc desktop ^8 --layout monocle
 bspc desktop ^9 --layout monocle
 
 # Unset variables
-unset __base_config __bspwm_home __env_dir __rule_dir __polybar_bar
+unset config_home bspwm_config_dir environment_dir polybar_name desktop

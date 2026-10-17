@@ -1,5 +1,3 @@
-# ${XDG_CONFIG_HOME}/sxhkd/sxhkdrc
-#
 # Basic sxhkd configuration
 
 # -- General
@@ -165,26 +163,27 @@ super + shift + grave
 # -- Spotify
 # Play/pause
 super + shift + space
-    playerctl play-pause --player=spotify
+	playerctl play-pause --player=spotify
 # Next track
 super + shift + Right
-    playerctl next --player=spotify
+	playerctl next --player=spotify
 # Previous track
 super + shift + Left
-    playerctl previous --player=spotify
+	playerctl previous --player=spotify
 
 # -- MPD
 # Play/pause
 super + alt + space
-    playerctl play-pause --player=mpd
+	mpc toggle
 # Next track
 super + alt + Right
-    playerctl next --player=mpd
+	mpc next
 # Previous track
 super + alt + Left
-    playerctl previous --player=mpd
+	mpc prev
 
-#  -- Media Keys
+# -- Media Keys
+# Playing Spotify takes priority over MPD; resume paused Spotify when MPD is idle.
 # Volume up/down
 {XF86AudioRaiseVolume, XF86AudioLowerVolume}
 	pamixer -u -{i,d} 5
@@ -196,16 +195,16 @@ XF86AudioMicMute
 	pamixer --default-source -t
 # Stop playing
 XF86AudioStop
-	playerctl stop
+	"${HOME}/.local/bin/media_control" stop
 # Toggle playing
 XF86AudioPlay
-	playerctl play-pause
+	"${HOME}/.local/bin/media_control" play-pause
 # Previous track
 XF86AudioPrev
-	playerctl previous
+	"${HOME}/.local/bin/media_control" previous
 # Next track
 XF86AudioNext
-	playerctl next
+	"${HOME}/.local/bin/media_control" next
 # Brightness up/down
 {XF86MonBrightnessUp, XF86MonBrightnessDown}
 	brightnessctl set {5%+,5%-}

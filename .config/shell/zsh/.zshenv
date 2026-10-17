@@ -1,7 +1,2 @@
-# ${ZDOTDIR}/.zshenv
-#
-# Default env file for zsh shells
-# Read on all invocations
-
-# Call actual default env
-[[ -f "${ZDOTDIR}"/../shellenv ]] && source "${ZDOTDIR}"/../shellenv
+# Environment settings for every zsh invocation; keep this free of output.
+source "${ZDOTDIR}/../shellenv"

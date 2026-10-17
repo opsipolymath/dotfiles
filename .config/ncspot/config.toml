@@ -1,0 +1,24 @@
+use_nerdfont = true
+initial_screen = "library"
+bitrate = 320
+gapless = true
+volnorm = true
+
+# Nord palette.
+[theme]
+background = "#2e3440"
+primary = "#d8dee9"
+secondary = "#81a1c1"
+title = "#88c0d0"
+playing = "#a3be8c"
+playing_bg = "#2e3440"
+highlight = "#eceff4"
+highlight_bg = "#434c5e"
+playing_selected = "#a3be8c"
+error = "#2e3440"
+error_bg = "#bf616a"
+statusbar = "#88c0d0"
+statusbar_bg = "#3b4252"
+statusbar_progress = "#81a1c1"
+cmdline = "#d8dee9"
+cmdline_bg = "#3b4252"
