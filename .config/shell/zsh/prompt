@@ -1,117 +1,104 @@
-#!/usr/bin/zsh
+#!/usr/bin/env zsh
+# Source from Zsh initialization; do not execute as a standalone script.
 
-# ${ZDOTDIR}/prompt
-#
-# Sets the zsh prompt
-
-# Load module for adding hooks
 autoload -Uz add-zsh-hook
 
-# Display number of commits ahead/behind and status for git repos
-PROMPT_GIT_CHANGES() {
-	local G_AHEAD G_BEHIND G_CHANGES
-	G_AHEAD="$(git_cmd rev-list --count "@{u}..HEAD" 2>/dev/null)"
-	G_BEHIND="$(git_cmd rev-list --count "HEAD..@{u}" 2>/dev/null)"
-	if (( G_AHEAD > 0 )) || (( G_BEHIND > 0 )); then
-		printf '%s' "${PROMPT_SPLIT}"
-		(( G_AHEAD )) &&
-			printf '%s' "%F{green}${G_AHEAD}"
-		(( G_BEHIND )) &&
-			printf '%s' "%F{red}${G_BEHIND}"
+# Prompt escapes are native to Zsh and count as zero-width characters.
+typeset -g PROMPT_SPLIT='%F{blue}]─['
+
+prompt_git_changes() {
+	local ahead behind changes
+	local -a git_command=("$@")
+
+	ahead="$("${git_command[@]}" rev-list --count '@{u}..HEAD' 2>/dev/null)"
+	behind="$("${git_command[@]}" rev-list --count 'HEAD..@{u}' 2>/dev/null)"
+	[[ $ahead == <-> ]] || ahead=0
+	[[ $behind == <-> ]] || behind=0
+
+	if (( ahead || behind )); then
+		print -rn -- "${PROMPT_SPLIT}"
+		(( ahead )) && print -rn -- "%F{green}${ahead}"
+		(( behind )) && print -rn -- "%F{red}${behind}"
 	fi
-	G_CHANGES="$(git_cmd status --porcelain=v1 2>/dev/null | wc -l)"
-	printf '%s' "${PROMPT_SPLIT}"
-	if (( G_CHANGES > 0 )); then
-		printf '%sdirty%s' "%F{red}" "%f"
+
+	changes="$("${git_command[@]}" status --porcelain=v1 2>/dev/null)"
+	if [[ -n $changes ]]; then
+		print -rn -- "${PROMPT_SPLIT}%F{red}dirty"
 	else
-		printf '%sclean%s' "%F{green}" "%f" 
+		print -rn -- "${PROMPT_SPLIT}%F{green}clean"
 	fi
 }
 
-# DIsplay git data if in a git repo or a dotfiles-tracked directory
-PROMPT_GIT() {
-	if git status &>/dev/null; then
-		alias git_cmd="/usr/bin/git"
+prompt_git() {
+	if command git rev-parse --is-inside-work-tree &>/dev/null; then
+		prompt_git_changes git
 	else
-		[[ "${PWD}" != "${HOME}" ]] &&
-			[[ ! "${PWD}" =~ ^"${HOME}/.config" ]] &&
-			[[ ! "${PWD}" =~ ^"${HOME}/.cache" ]] &&
-			[[ ! "${PWD}" =~ ^"${HOME}/.local" ]] &&
-			return 1
-		alias git_cmd='dotfiles'
-		printf '%s%sdotfiles' "${PROMPT_SPLIT}" '%F{yellow}'
+		case ${PWD}/ in
+			"${HOME}/"|"${HOME}/.config/"*|"${HOME}/.cache/"*|"${HOME}/.local/"*)
+				print -rn -- "${PROMPT_SPLIT}%F{yellow}dotfiles"
+				prompt_git_changes git --git-dir="${DOTFILES}" --work-tree="$HOME"
+				;;
+		esac
 	fi
-	PROMPT_GIT_CHANGES
 }
 
-# Return the host portion of the prompt string
-PROMPT_HOST() {
-	# Show monochrome when not SSH, or when SSH but not in TMUX
-	if [[ -z "$SSH_TTY" || -z "$TMUX" ]]; then
-		printf "%s" "$(hostname)"
-		return
-	fi
-	PROMPT_HNAME="$(hostname)"
-	COLOURS="132465"
-	for (( i=0; i<${#PROMPT_HNAME}; i++ )); do
-		printf '%%{%s%%}' "$(tput setaf ${COLOURS:$(( i % ${#COLOURS} )):1})"
-		printf '%s' "${PROMPT_HNAME:$i:1}"
-	done
-}
+prompt_battery() {
+	local battery=/sys/class/power_supply/BAT0
+	local battery_status capacity color
+	[[ -z ${SSH_TTY:-} ]] || return 0
+	[[ -r ${battery}/status && -r ${battery}/capacity ]] || return 0
 
-set_prompt () {
-	unset PROMPT RPROMPT RPS1
+	IFS= read -r battery_status < "${battery}/status"
+	IFS= read -r capacity < "${battery}/capacity"
+	[[ $capacity == <-> ]] || return 0
 
-	PROMPT_TOP="%F{blue}┌["
-	PROMPT_BOTTOM="%F{blue}└["
-	PROMPT_SPLIT="%F{blue}]─["
-	PROMPT_CLOSE="%F{blue}]%f"
-
-	# Display PWD in green if writable, red if not
-	PROMPT_DIR="%F{red}%~%F{blue}"
-	[[ -w "." ]] && PROMPT_DIR="%F{green}%~%F{blue}"
-
-	PROMPT_TOP+="${PROMPT_DIR}$(PROMPT_GIT)%F{blue}]"
-
-	## Display root in red, regular user in green
-	#PROMPT_BOTTOM+="%(#.%F{red}odin%F{green}.%F{green}%n)@%m${PROMPT_CLOSE}"
-	#PROMPT_BOTTOM+="%(#.%F{red}.%F{blue}) %# %f"
-	PROMPT_BOTTOM+="%(#.%F{red}odin%F{green}.%F{green}%n)@$(PROMPT_HOST)${PROMPT_CLOSE}"
-	PROMPT_BOTTOM+="%(#.%F{red}.%F{blue}) %# %f"
-
-	PROMPT="%B${PROMPT_TOP}%b"$'\n'"%B${PROMPT_BOTTOM}%b"
-
-	# Setup RPROMPT if in an SSH session but not in TMUX
-	if [[ -n "$SSH_TTY" && -z "$TMUX" ]]; then
-		RPROMPT='%B%F{blue}[%F{green}via %F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}]%f%b'
+	if (( capacity >= 100 )); then
+		color=green
+	elif (( capacity < 10 )); then
+		color=red
+	elif [[ $battery_status == Charging ]]; then
+		color=yellow
+	else
+		color=red
 	fi
 
-	# Reset visibility status
-	tput cnorm
+	print -rn -- "%F{${color}}${capacity}%%${PROMPT_SPLIT}"
 }
 
-set_prompt_test() {
-	PROMPT='%# '
-	unset RPROMPT RPS1
+prompt_ssh_indicator() {
+	[[ -n ${SSH_TTY:-} ]] || return 0
+	print -rn -- ' | %F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}'
 }
 
-# Re-evaluate prompt when mode changes
-function zle-line-init zle-keymap-select() {
-	set_prompt
+prompt_update() {
+	local directory_color user_part end_color host
+
+	directory_color=green
+	[[ -w $PWD ]] || directory_color=red
+
+	if (( EUID == 0 )); then
+		user_part='%F{red}odin%F{green}'
+		end_color=red
+	else
+		user_part='%F{green}%n'
+		end_color=blue
+	fi
+
+	host=$(hostname)
+
+	PROMPT="%B%F{blue}┌[%F{${directory_color}}%~$(prompt_git)%F{blue}]%f%b"$'\n'
+	PROMPT+="%B%F{blue}└[$(prompt_battery)${user_part}@${host}$(prompt_ssh_indicator)%F{blue}]%f %F{${end_color}}%# %f%b"
+}
+
+# Refresh when entering a prompt or switching ZLE keymaps.
+prompt_redraw() {
+	prompt_update
 	zle reset-prompt
 }
-zle -N zle-line-init
-zle -N zle-keymap-select
+zle -N zle-line-init prompt_redraw
+zle -N zle-keymap-select prompt_redraw
+add-zsh-hook precmd prompt_update
 
-# Re-evaluate prompt before each command is run
-add-zsh-hook precmd set_prompt
-
-# Define multi-line command prompts to be more clear
-export PROMPT2='%F{yellow}»··%_%(4l..··)··%F{blue}> %f'
-#export PROMPT2='%F{yellow}»·······%F{blue}> %f'
-
-# Define default selection prompt
-export PROMPT3='Make a selection: '
-
-# Define shell tracing prompt to be more useful
-export PROMPT4='+%F{yellow}+%1N-%I> %f'
+PROMPT2='%F{yellow}»··%_%(4l..··)··%F{blue}> %f'
+PROMPT3='Make a selection: '
+PROMPT4='+%F{yellow}+%1N-%I> %f'

@@ -1,126 +1,115 @@
-#!/usr/bin/bash
-# shellcheck disable=SC2016
+#!/usr/bin/env bash
+# Source from Bash initialization; do not execute as a standalone script.
 
-# ${BASHDOTDIR}/prompt
-#
-# Sets the bash prompt
+# Bash requires \[...\] around every nonprinting sequence in PS1.
+PROMPT_RED='\[\e[31m\]'
+PROMPT_GREEN='\[\e[32m\]'
+PROMPT_YELLOW='\[\e[33m\]'
+PROMPT_BLUE='\[\e[34m\]'
+PROMPT_RESET='\[\e[0m\]'
+PROMPT_SPLIT="${PROMPT_BLUE}]─["
 
-# Prompts will be colorized if using arch and the following file is sourced:
-#   /usr/share/makepkg/util/message.sh
-# Note that various functions are needed to trigger string re-evaluation
+prompt_git_changes() {
+	local ahead behind changes
+	local -a git_command=("$@")
 
-# Global variables used in prompts
-PROMPT_TOPEN="$(printf "%s┌[" "\[${BLUE}\]")"
-PROMPT_BOPEN="$(printf "%s└[" "\[${BLUE}\]")"
-PROMPT_SPLIT="$(printf "%s]─[" "${BLUE}")"
-PROMPT_CLOSE="$(printf "%s]%s" "\[${BLUE}\]" "\[${ALL_OFF}\]")"
-PROMPT_INDENT="····················"
-export PROMPT_TOPEN PROMPT_BOPEN PROMPT_SPLIT PROMPT_CLOSE PROMPT_INDENT
+	ahead="$("${git_command[@]}" rev-list --count '@{u}..HEAD' 2>/dev/null)"
+	behind="$("${git_command[@]}" rev-list --count 'HEAD..@{u}' 2>/dev/null)"
+	[[ $ahead =~ ^[0-9]+$ ]] || ahead=0
+	[[ $behind =~ ^[0-9]+$ ]] || behind=0
 
-# Display PWD in green if writable, red if not
-PROMPT_DIR() {
-	[[ ! -w "$PWD" ]] && printf '%s' "${RED}" && return
-	printf '%s' "${GREEN}"
-}
-
-# Display number of commits ahead/behind and status for git repos
-PROMPT_GIT_CHANGES() {
-	local G_AHEAD G_BEHIND G_CHANGES
-	G_AHEAD="$(git_cmd rev-list --count "@{u}..HEAD" 2>/dev/null)"
-	G_BEHIND="$(git_cmd rev-list --count "HEAD..@{u}" 2>/dev/null)"
-	if (( G_AHEAD > 0 )) || (( G_BEHIND > 0 )); then
+	if (( ahead || behind )); then
 		printf '%s' "${PROMPT_SPLIT}"
-		(( G_AHEAD )) &&
-			printf '%s%s' "${GREEN}" "${G_AHEAD}"
-		(( G_BEHIND )) &&
-			printf '%s%s' "${RED}" "${G_BEHIND}"
+		(( ahead )) && printf '%s%s' "${PROMPT_GREEN}" "$ahead"
+		(( behind )) && printf '%s%s' "${PROMPT_RED}" "$behind"
 	fi
-	G_CHANGES="$(git_cmd status --porcelain=v1 2>/dev/null | wc -l)"
-	printf '%s' "${PROMPT_SPLIT}"
-	if (( G_CHANGES > 0 )); then
-		printf '%sdirty%s' "${RED}" "${ALL_OFF}"
+
+	changes="$("${git_command[@]}" status --porcelain=v1 2>/dev/null)"
+	if [[ -n $changes ]]; then
+		printf '%s%sdirty' "${PROMPT_SPLIT}" "${PROMPT_RED}"
 	else
-		printf '%sclean%s' "${GREEN}" "${ALL_OFF}"
+		printf '%s%sclean' "${PROMPT_SPLIT}" "${PROMPT_GREEN}"
 	fi
 }
 
-# DIsplay git data if in a git repo or a dotfiles-tracked directory
-PROMPT_GIT() {
-	if git status &>/dev/null; then
-		alias git_cmd="/usr/bin/git"
+prompt_git() {
+	if command git rev-parse --is-inside-work-tree &>/dev/null; then
+		prompt_git_changes git
 	else
-		[[ "${PWD}" != "${HOME}" ]] &&
-			[[ ! "${PWD}" =~ ^"${HOME}/.config" ]] &&
-			[[ ! "${PWD}" =~ ^"${HOME}/.cache" ]] &&
-			[[ ! "${PWD}" =~ ^"${HOME}/.local" ]] &&
-			return 1
-		alias git_cmd='dotfiles'
-		printf '%s%sdotfiles' "${PROMPT_SPLIT}" "${YELLOW}"
+		case ${PWD}/ in
+			"${HOME}/"|"${HOME}/.config/"*|"${HOME}/.cache/"*|"${HOME}/.local/"*)
+				printf '%s%sdotfiles' "${PROMPT_SPLIT}" "${PROMPT_YELLOW}"
+				prompt_git_changes git --git-dir="${DOTFILES}" --work-tree="$HOME"
+				;;
+		esac
 	fi
-	PROMPT_GIT_CHANGES
 }
 
-# Return the username portion of the prompt string
-PROMPT_USER() {
-	(( EUID == 0 )) &&
-		printf '\[%s\]%s\[%s\]' "${RED}" "odin" "${GREEN}" &&
-		return
-	printf '\[%s\]%s' "${GREEN}" "\u"
+prompt_battery() {
+	local battery=/sys/class/power_supply/BAT0
+	local status capacity color
+	[[ -z ${SSH_TTY:-} ]] || return 0
+	[[ -r ${battery}/status && -r ${battery}/capacity ]] || return 0
+
+	IFS= read -r status < "${battery}/status"
+	IFS= read -r capacity < "${battery}/capacity"
+	[[ $capacity =~ ^[0-9]+$ ]] || return 0
+
+	if (( capacity >= 100 )); then
+		color=$PROMPT_GREEN
+	elif (( capacity < 10 )); then
+		color=$PROMPT_RED
+	elif [[ $status == Charging ]]; then
+		color=$PROMPT_YELLOW
+	else
+		color=$PROMPT_RED
+	fi
+
+	printf '%s%s%%%s' "$color" "$capacity" "${PROMPT_SPLIT}"
 }
 
-# Return the host portion of the prompt string
-PROMPT_HOST() {
-	if [[ -z "$SSH_TTY" ]]; then
-		printf "%s" "$(hostname)"
-		return
-	fi
-	PROMPT_HNAME="$(hostname)"
-	COLOURS="132465"
-	for (( i=0; i<${#PROMPT_HNAME}; i++ )); do
-		printf '%s' "$(tput setaf ${COLOURS:$(( i % ${#COLOURS} )):1})"
-		printf '%s' "${PROMPT_HNAME:$i:1}"
+# Seven colour stops, matching the Zsh SSH indicator.
+prompt_ssh_indicator() {
+	[[ -n ${SSH_TTY:-} ]] || return 0
+
+	local character color index
+	local -a characters=(b i f r ö s t)
+	local -a colors=(31 '38;5;214' 33 32 34 36 35)
+
+	printf ' | '
+	for (( index = 0; index < ${#characters[@]}; index++ )); do
+		color=${colors[index]}
+		character=${characters[index]}
+		printf '\\[\\e[%sm\\]%s' "${color}" "${character}"
 	done
 }
 
-# Return the end portion of the prompt string
-PROMPT_END() {
-	(( EUID == 0 )) &&
-		printf ' \[%s\]\$ \[%s\]' "${RED}" "${ALL_OFF}" &&
-		return
-	printf ' \[%s\]\$ \[%s\]' "${BLUE}" "${ALL_OFF}"
-}
+prompt_update() {
+	local directory_color user_part end_color host
 
-# Primary prompt string
-PS1="${PROMPT_TOPEN}\$(PROMPT_DIR)\w\$(PROMPT_GIT)${PROMPT_CLOSE}
-${PROMPT_BOPEN}$(PROMPT_USER)@$(PROMPT_HOST)${PROMPT_CLOSE}$(PROMPT_END)"
-export PS1
+	directory_color=$PROMPT_GREEN
+	[[ -w $PWD ]] || directory_color=$PROMPT_RED
 
-# Secondary prompt string
-export PS2="\[${YELLOW}\]»···\[${BLUE}\]> "
-
-# Selection prompt string
-export PS3="${BLUE}Make a selection: ${ALL_OFF}"
-
-# Debug prompt strings
-PROMPT_DEBUG() {
-	printf '%s' "${YELLOW}"
-	printf '${PROMPT_INDENT:0:$((2*(BASH_SUBSHELL+1)))}['
-	printf '%s' "${BLUE}"
-	if [[ "linux" == "${TERM}" ]]; then
-		printf '${BASH_SOURCE}-'
-		printf '${FUNCNAME[0]:+${FUNCNAME[0]}()-}'
-		printf '${LINENO}'
-	else
-		printf ' ${BASH_SOURCE}·'
-		printf '${FUNCNAME[0]:+󰡱 ${FUNCNAME[0]}·}'
-		printf ' ${LINENO}'
-	fi
-	printf '%s] ' "${YELLOW}"
 	if (( EUID == 0 )); then
-		printf '%s# %s' "${RED}" "${ALL_OFF}"
+		user_part="${PROMPT_RED}odin${PROMPT_GREEN}"
+		end_color=$PROMPT_RED
 	else
-		printf '%s$ %s' "${BLUE}" "${ALL_OFF}"
+		user_part="${PROMPT_GREEN}\\u"
+		end_color=$PROMPT_BLUE
 	fi
+
+	host=$(hostname)
+
+	PS1="${PROMPT_BLUE}┌[${directory_color}\\w$(prompt_git)${PROMPT_BLUE}]${PROMPT_RESET}"$'\n'
+	PS1+="${PROMPT_BLUE}└[$(prompt_battery)${user_part}@${host}$(prompt_ssh_indicator)${PROMPT_BLUE}]${PROMPT_RESET} ${end_color}\\\$ ${PROMPT_RESET}"
 }
-PS4="$(PROMPT_DEBUG)"
-export PS4
+
+# Preserve pre-existing prompt hooks when PROMPT_COMMAND is an array or string.
+if ! declare -p PROMPT_COMMAND 2>/dev/null | grep -q '^declare -a '; then
+	PROMPT_COMMAND=("${PROMPT_COMMAND:-}")
+fi
+PROMPT_COMMAND+=(prompt_update)
+
+PS2="${PROMPT_YELLOW}»···${PROMPT_BLUE}> ${PROMPT_RESET}"
+PS3=$'\e[34mMake a selection: \e[0m'
+PS4='+ ${BASH_SOURCE}:${LINENO}: '
