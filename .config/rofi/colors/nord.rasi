@@ -1,5 +1,3 @@
-// $XDG_CONFIG_HOME/rofi/nord.rasi
-//
 // Custom Nord theme for rofi
 
 * {
@@ -20,13 +18,13 @@
 	nord15: #A3BE8C;
 	nord16: #B48EAD;
 
-	background:       @nord01;
+	background: @nord01;
 	background-light: @nord03;
-	foreground:       @nord05;
-	selected:         @nord10;
-	active:           @nord15;
-	urgent:           @nord12;
+	foreground: @nord05;
+	selected: @nord10;
+	active: @nord15;
+	urgent: @nord12;
 
-	background-color:       transparent;
+	background-color: transparent;
 	font: "JetBrains Mono Nerd Font 10";
 }

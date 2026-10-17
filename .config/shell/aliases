@@ -1,47 +1,54 @@
-#!/usr/bin/bash
-
-# ${SHELL_HOME}/aliases
-#
+# shellcheck shell=bash
 # General aliases and functions
 
 # Fix sudo so alias expansion works
-alias sudo="/usr/bin/sudo "
+alias sudo='/usr/bin/sudo '
 
 # Fixes for applications that require arguments to respect XDG
-alias irssi='irssi --home="${XDG_CONFIG_HOME}"/irssi'
+alias irssi='irssi --home="${XDG_CONFIG_HOME}/irssi"'
 
 # Default options for commonly used commands
-alias cd="cd -P"
-alias cp="cp -v"
-alias mv="mv -v"
-alias acp="/usr/bin/advcp -g"
-alias amv="/usr/bin/advmv -g"
-alias df="/usr/bin/df -h"
-alias du="/usr/bin/du -h"
-alias grep="grep --color=auto"
-alias ls="/usr/bin/ls --color=auto -hv --group-directories-first"
-alias sort="/usr/bin/sort -h"
+alias cd='cd -P'
+alias cp='cp -v'
+alias mv='mv -v'
+alias acp='/usr/bin/advcp -g'
+alias amv='/usr/bin/advmv -g'
+alias df='/usr/bin/df -h'
+alias du='/usr/bin/du -h'
+alias grep='grep --color=auto'
+alias ls='/usr/bin/ls --color=auto -hv --group-directories-first'
+alias sort='/usr/bin/sort -h'
 
 # Shortened aliases for common applications
 alias docks='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Names}}"'
 alias em="emacsclient -c -a 'emacs'"
 alias emacs="emacsclient -c -a 'emacs'"
-alias info="/usr/bin/pinfo"
-alias lc="/usr/bin/latexmk -aux-directory=/tmp/latex -pdf"
-alias mkdiff="diff -U 99999"
-alias nd="/usr/bin/vim -d"
-alias nv="/usr/bin/vim"
-alias vi="/usr/bin/vim"
-alias se="/usr/bin/sudoedit"
-alias steam="/usr/bin/steam -nochatui -nofriendsui -silent"
+alias info='/usr/bin/pinfo'
+alias lc='/usr/bin/latexmk -aux-directory=/tmp/latex -pdf'
+alias mkdiff='diff -U 99999'
+alias nc='music'
+alias ncmpcpp='music'
+alias nd='/usr/bin/vim -d'
+alias nv='/usr/bin/vim'
+alias vi='/usr/bin/vim'
+alias se='/usr/bin/sudoedit'
+alias steam='/usr/bin/steam -nochatui -nofriendsui -silent'
 
 # Set ssh aliases to use custom config file if defined
-if [ -n "${SSH_CONFIG}" ]; then
-	alias ssh='/usr/bin/ssh -F "${SSH_CONFIG}"'
-	alias scp='/usr/bin/scp -F "${SSH_CONFIG}"'
+if [[ -n ${SSH_CONFIG:-} ]]; then
+	alias scp='/usr/bin/scp -F "$SSH_CONFIG"'
 fi
 
-# Create a command that makes and switches to a directory
-md () {
-	mkdir "$1" &>/dev/null && cd "$1" &>/dev/null || error "Unable to make/change to directory."
-}
+# The colorful SSH wrapper also honors SSH_CONFIG.
+alias ssh='bifrost'
+
+# Preserve familiar package/alarm names while implementation lives in executables.
+alias update='packages update'
+alias aursync='packages aur'
+alias pkgadd='packages add'
+alias pkgdel='packages remove'
+alias pkgverify='packages verify'
+alias localdbsign='packages sign-db'
+alias fixlocaldb='packages sign-all'
+alias setalarm='alarm set'
+alias killalarm='alarm stop'

@@ -1,0 +1,65 @@
+# shellcheck shell=bash
+# Shared prompt data, rendered using each shell's native color escapes.
+prompt_git_changes() {
+	local ahead behind changes
+	local -a git_command=("$@")
+
+	ahead="$("${git_command[@]}" rev-list --count '@{u}..HEAD' 2>/dev/null)"
+	behind="$("${git_command[@]}" rev-list --count 'HEAD..@{u}' 2>/dev/null)"
+	[[ $ahead =~ ^[0-9]+$ ]] || ahead=0
+	[[ $behind =~ ^[0-9]+$ ]] || behind=0
+
+	if (( ahead || behind )); then
+		printf '%s' "$PROMPT_SPLIT"
+		(( ahead )) && printf '%s%s' "$PROMPT_GREEN" "$ahead"
+		(( behind )) && printf '%s%s' "$PROMPT_RED" "$behind"
+	fi
+
+	if ! changes=$("${git_command[@]}" status --porcelain=v1 2>/dev/null); then
+		printf '%s%sunknown' "$PROMPT_SPLIT" "$PROMPT_YELLOW"
+		return 0
+	fi
+	if [[ -n $changes ]]; then
+		printf '%s%sdirty' "$PROMPT_SPLIT" "$PROMPT_RED"
+	else
+		printf '%s%sclean' "$PROMPT_SPLIT" "$PROMPT_GREEN"
+	fi
+}
+
+prompt_git() {
+	if [[ $(command git rev-parse --is-inside-work-tree 2>/dev/null) == true ]]; then
+		prompt_git_changes git
+	elif [[ -d $DOTFILES ]]; then
+		case ${PWD}/ in
+			"${HOME}/"|"${XDG_CONFIG_HOME}/"*|"${XDG_CACHE_HOME}/"*|"${XDG_DATA_HOME}/"*|"${XDG_STATE_HOME}/"*)
+				printf '%s%sdotfiles' "$PROMPT_SPLIT" "$PROMPT_YELLOW"
+				prompt_git_changes git --git-dir="$DOTFILES" --work-tree="$HOME"
+				;;
+		esac
+	fi
+}
+
+prompt_battery() {
+	local battery=/sys/class/power_supply/BAT0
+	local battery_status capacity color
+	[[ -z ${SSH_TTY:-} ]] || return 0
+	[[ -r ${battery}/status && -r ${battery}/capacity ]] || return 0
+
+	IFS= read -r battery_status < "${battery}/status"
+	IFS= read -r capacity < "${battery}/capacity"
+	[[ $capacity =~ ^[0-9]+$ ]] || return 0
+
+	capacity=$((10#$capacity))
+	if (( capacity >= 100 )); then
+		color=$PROMPT_GREEN
+	elif (( capacity < 10 )); then
+		color=$PROMPT_RED
+	elif [[ $battery_status == Charging ]]; then
+		color=$PROMPT_YELLOW
+	else
+		color=$PROMPT_RED
+	fi
+
+	printf '%s%s%s%s' "$color" "$capacity" "$PROMPT_PERCENT" "$PROMPT_SPLIT"
+}
+

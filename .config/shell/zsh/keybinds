@@ -1,7 +1,3 @@
-#!/usr/bin/zsh
-
-# ${ZDOTDIR}/keybindings
-#
 # Keybindings for consoles/ssh
 
 # Load the modules for searching and completions
@@ -23,14 +19,20 @@ bindkey "\e[F"  end-of-line
 bindkey "\e[5~" history-beginning-search-backward
 bindkey "\e[6~" history-beginning-search-forward
 
-# Non-standard console
-bindkey "${terminfo[kcuu1]}" up-line-or-beginning-search
-bindkey "${terminfo[kcud1]}" down-line-or-beginning-search
-bindkey "${terminfo[khome]}" beginning-of-line
-bindkey "${terminfo[kend]}"  end-of-line
-bindkey "${terminfo[kdch1]}" delete-char
-bindkey "${terminfo[kpp]}"   history-beginning-search-backward
-bindkey "${terminfo[knp]}"   history-beginning-search-forward
+# Bind optional terminal capabilities only when the terminal defines them.
+zmodload zsh/terminfo
+_shell_bind_terminal_keys() {
+	local capability widget
+	for capability widget in \
+		kcuu1 up-line-or-beginning-search \
+		kcud1 down-line-or-beginning-search \
+		khome beginning-of-line kend end-of-line kdch1 delete-char \
+		kpp history-beginning-search-backward knp history-beginning-search-forward; do
+		[[ -n ${terminfo[$capability]:-} ]] && bindkey "${terminfo[$capability]}" "$widget"
+	done
+}
+_shell_bind_terminal_keys
+unfunction _shell_bind_terminal_keys
 
 # Fix delete key
 bindkey "\e[3~" delete-char

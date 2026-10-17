@@ -1,5 +1,3 @@
-# ${XDG_CONFIG_HOME}/sxhkd/sxhkdrc
-#
 # Basic sxhkd configuration
 
 # -- General
@@ -165,24 +163,24 @@ super + shift + grave
 # -- Spotify
 # Play/pause
 super + shift + space
-    playerctl play-pause --player=spotify
+	playerctl play-pause --player=spotify
 # Next track
 super + shift + Right
-    playerctl next --player=spotify
+	playerctl next --player=spotify
 # Previous track
 super + shift + Left
-    playerctl previous --player=spotify
+	playerctl previous --player=spotify
 
 # -- MPD
 # Play/pause
 super + alt + space
-    playerctl play-pause --player=mpd
+	playerctl play-pause --player=mpd
 # Next track
 super + alt + Right
-    playerctl next --player=mpd
+	playerctl next --player=mpd
 # Previous track
 super + alt + Left
-    playerctl previous --player=mpd
+	playerctl previous --player=mpd
 
 #  -- Media Keys
 # Volume up/down

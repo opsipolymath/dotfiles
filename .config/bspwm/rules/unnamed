@@ -1,34 +1,30 @@
 #!/bin/sh
 
-# ${XDG_CONFIG_HOME}/bspwm/rules/spotify
-#
-# bspwm external rules to force spotify to a given desktop
+# Route unclassified Steam and Spotify windows to their desktops.
+window_id="${1?}"
+window_class="${2}"
+pid_atom="_NET_WM_PID"
+steam_desktop="^8"
+spotify_desktop="^9"
 
-# Set variables
-__win_id="${1?}"
-__win_class="${2}"
-__atom="_NET_WM_PID"
-__steam="^8"
-__spotify="^9"
-
-# Ignore STDERR output
 exec 2>/dev/null
 
-# Only process windows of undefined class
-if [ "${__win_class}" = "" ]; then
-	# Check if it's steam related
-	__name="$(xprop -id "${__win_id}" | grep '^WM_NAME' | cut -d= -f2)"
-	if [[ "${__name}" = *Steam* ]]; then
-		echo desktop="${__steam}"
-		return
-	fi
-	# Check what else it might be
-	__pid="$( xprop -id "${__win_id:?}" -notype -f "${__atom}" 32c '=$0' "${__atom}" | cut -d= -f2 )"
-	__name="$(ps -p "${__pid:?}" -o comm= )"
-	if [ "spotify" = "${__name}" ]; then
-		echo desktop="${__spotify}";
-		return
-	fi
+if [ -n "${window_class}" ]; then
+	exit 0
 fi
 
-#notify-send "id=${__win_id} class=${__win_class}" "pid=${__pid} name=${__name}"
+window_name="$(xprop -id "${window_id}" | grep '^WM_NAME' | cut -d= -f2)"
+case "${window_name}" in
+	*Steam*)
+		printf 'desktop=%s\n' "${steam_desktop}"
+		exit 0
+		;;
+esac
+
+process_id="$(xprop -id "${window_id}" -notype -f "${pid_atom}" 32c '=$0' "${pid_atom}" | cut -d= -f2)"
+process_name="$(ps -p "${process_id:?}" -o comm=)"
+if [ "${process_name}" != spotify ]; then
+	exit 0
+fi
+
+printf 'desktop=%s\n' "${spotify_desktop}"

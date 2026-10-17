@@ -1,11 +1,7 @@
-#!/usr/bin/zsh
-
-# ${ZDOTDIR}/completion
-#
 # Completion settings
 
 # -- Enable/disable options
-# List directories seperately and before files
+# List directories separately and before files
 zstyle ':completion:*' list-dirs-first true
 # Allow the original string as a possible completion
 zstyle ':completion:*' original true
@@ -35,7 +31,7 @@ zstyle ':completion:*' select-prompt '%SScrolling active: current selection at %
 # -- Sorting/grouping options
 # Sort files by name
 zstyle ':completion:*' file-sort name
-# Have all different types of matches groupe separately
+# Have all different types of matches grouped separately
 zstyle ':completion:*' group-name ''
 
 # -- Matching settings
@@ -63,14 +59,14 @@ zstyle ':completion:*' preserve-prefix '//'
 
 # Update fpath to include custom completions
 [[ -d "${ZDOTDIR}/completions" ]] &&
-	fpath=( "${ZDOTDIR}"/completions ${fpath} )
+	fpath=("${ZDOTDIR}/completions" "${fpath[@]}")
 
 # Relocate completion cache to cache directory
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
-mkdir -p "$XDG_CACHE_HOME/zsh"
-ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump"
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
+mkdir -p "${XDG_CACHE_HOME}/zsh"
+ZSH_COMPDUMP="${XDG_CACHE_HOME}/zsh/zcompdump"
 
 # Load completion module and initialize it
 autoload -Uz compinit
-compinit -C -d "$ZSH_COMPDUMP"
+compinit -d "$ZSH_COMPDUMP"
 

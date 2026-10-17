@@ -1,0 +1,35 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = tab
+indent_size = tab
+tab_width = 8
+# Some configuration values contain meaningful trailing whitespace.
+trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 4
+
+[*.md]
+indent_style = space
+indent_size = 2
+
+[MANIFEST.json]
+indent_style = space
+indent_size = 2
+
+# Preserve the formatting of copied third-party source assets.
+[vim/colors/nord.vim]
+indent_style = space
+indent_size = 2
+
+[cava/shaders/*]
+indent_style = space
+indent_size = 4
+
+[cava/shaders/eye_of_phi.frag]
+indent_size = 2

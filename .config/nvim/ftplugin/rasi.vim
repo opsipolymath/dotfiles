@@ -4,10 +4,12 @@
 " Latest Revision: 03 April 2021
 
 if exists("b:did_ftplugin")
-  finish
+	finish
 endif
 let b:did_ftplugin = 1
 
 setlocal commentstring=//\ %s,;\ //\ %s
-set iskeyword+=:
-set iskeyword+=-
+setlocal iskeyword+=:
+setlocal iskeyword+=-
+
+let b:undo_ftplugin = "setlocal commentstring< iskeyword<"
