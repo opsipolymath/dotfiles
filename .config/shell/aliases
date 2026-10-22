@@ -23,7 +23,8 @@ alias ls="/usr/bin/ls --color=auto -hv --group-directories-first"
 alias sort="/usr/bin/sort -h"
 
 # Shortened aliases for common applications
-alias docks='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Command}}\t{{.CreatedAt}}\t{{.Status}}\t{{.Names}}"'
+alias docks='sudo docker ps --format "table {{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.Status}}\t{{.ID}}\t{{.Networks}}" | awk '\''NR==1 {print; next} {print | "sort -k1,1"}'\'''
+alias docks_all='sudo docker ps -a --format "table {{.Names}}\t{{.Image}}\t{{.CreatedAt}}\t{{.Status}}\t{{.ID}}" | awk '\''NR==1 {print; next} {print | "sort -k1,1"}'\'''
 alias em="emacsclient -c -a 'emacs'"
 alias emacs="emacsclient -c -a 'emacs'"
 alias info="/usr/bin/pinfo"
@@ -34,6 +35,7 @@ alias nv="/usr/bin/vim"
 alias vi="/usr/bin/vim"
 alias se="/usr/bin/sudoedit"
 alias steam="/usr/bin/steam -nochatui -nofriendsui -silent"
+alias git-notes='git --git-dir="/containers/50. code-server/git/"'
 
 # Set ssh aliases to use custom config file if defined
 if [ -n "${SSH_CONFIG}" ]; then
