@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+
+set -u
+set -o pipefail
+
+export GIT_SSH_COMMAND='/usr/bin/ssh -F "/home/dn/.config/ssh/config"'
+GIT_DIR="/containers/50. code-server/git"
+WORK_TREE="/srv/code-server/notes"
+BRANCH="main"
+
+GIT=(git --git-dir="$GIT_DIR" --work-tree="$WORK_TREE")
+
+# Prevent the watcher and hourly timer from syncing simultaneously.
+exec 9>"$GIT_DIR/autosync.lock"
+flock -n 9 || exit 0
+
+echo "[$(date --iso-8601=seconds)] Starting sync"
+
+# Don't attempt automation over an unresolved conflict.
+if [[ -n "$("${GIT[@]}" diff --name-only --diff-filter=U)" ]]; then
+    echo "Unresolved merge conflict; refusing automatic sync." >&2
+    exit 1
+fi
+
+# Save all local changes first.
+"${GIT[@]}" add -A
+
+if ! "${GIT[@]}" diff --cached --quiet; then
+    hostname="$(hostname -s)"
+    timestamp="$(date '+%Y-%m-%d %H:%M:%S %z')"
+
+    "${GIT[@]}" commit \
+        -m "autosave: ${hostname} ${timestamp}"
+fi
+
+# Bring in anything pushed from another machine.
+if ! "${GIT[@]}" fetch origin "$BRANCH"; then
+    echo "Fetch failed; local commit remains safe." >&2
+    exit 1
+fi
+
+if ! "${GIT[@]}" rebase "origin/$BRANCH"; then
+    echo "Rebase conflict; aborting automatic rebase." >&2
+    "${GIT[@]}" rebase --abort
+    exit 1
+fi
+
+# Push whatever we now have.
+if ! "${GIT[@]}" push origin "$BRANCH"; then
+    echo "Push failed; changes remain committed locally." >&2
+    exit 1
+fi
+
+echo "[$(date --iso-8601=seconds)] Sync complete"

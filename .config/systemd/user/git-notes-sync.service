@@ -1,0 +1,6 @@
+[Unit]
+Description=Synchronize notes with GitHub
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/git-notes-autosync

@@ -1,0 +1,11 @@
+[Unit]
+Description=Watch notes for changes
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/git-notes-watch
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

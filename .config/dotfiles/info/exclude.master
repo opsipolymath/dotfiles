@@ -59,6 +59,7 @@
 .config/sqlitebrowser/
 .config/ssh/
 .config/systemd/user/default.target.wants/
+.config/systemd/user/timers.target.wants/
 .config/tor/
 .config/unity3d/
 .config/VirtualBox/

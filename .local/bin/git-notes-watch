@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -u
+
+export GIT_SSH_COMMAND='/usr/bin/ssh -F "/home/dn/.config/ssh/config"'
+GIT_DIR="/containers/50. code-server/git"
+WORK_TREE="/srv/code-server/notes"
+SYNC="$HOME/.local/bin/git-notes-autosync"
+
+GIT=(git --git-dir="$GIT_DIR" --work-tree="$WORK_TREE")
+
+inotifywait \
+    --monitor \
+    --recursive \
+    --quiet \
+    --event close_write,create,delete,moved_to,moved_from \
+    --format '%w%f' \
+    "$WORK_TREE" |
+while IFS= read -r event
+do
+    # Keep consuming events until we've had 30 seconds of quiet.
+    while IFS= read -r -t 30 event
+    do
+        :
+    done
+
+    # Don't fetch/push merely because an ignored build file changed.
+    if [[ -n "$("${GIT[@]}" status --porcelain)" ]]; then
+        "$SYNC"
+    fi
+done
