@@ -248,6 +248,7 @@ augroup spelling
   autocmd FileType c   setlocal nospell
   autocmd FileType cpp setlocal nospell
   autocmd FileType vim setlocal nospell
+  autocmd FileType sh  setlocal nospell
 augroup END
 
 
