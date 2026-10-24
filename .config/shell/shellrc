@@ -13,7 +13,7 @@ export PATH="${HOME}/.local/bin:$PATH"
 
 # Setup directories
 command -v xdg-user-dirs-update >/dev/null 2>&1 && xdg-user-dirs-update
-source "${HOME}"/.config/user-dirs.dirs
+[[ -f "${HOME}"/.config/user-dirs.dirs ]] && source "${HOME}"/.config/user-dirs.dirs
 SHELL_HOME="${HOME}"/.config/shell
 export SHELL_HOME
 source "${SHELL_HOME}"/shellenv
