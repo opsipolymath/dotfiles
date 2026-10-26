@@ -14,7 +14,7 @@
 [pull]
 	rebase = false
 [diff]
-	tool = nvimdiff
+	tool = vimdiff
 [difftool]
 	prompt = false
 [difftool "nvimdiff"]
