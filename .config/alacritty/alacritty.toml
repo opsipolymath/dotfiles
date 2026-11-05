@@ -35,3 +35,8 @@ opacity = 1.0
 action = "None"
 key = "Space"
 mods = "Shift|Control"
+
+[[keyboard.bindings]]
+key = "Return"
+mods = "Shift"
+chars = "\u001B\r"
