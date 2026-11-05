@@ -44,7 +44,6 @@ polybar -r "${polybar_name}" &
 lxpolkit &
 picom &
 sxhkd &
-blueman-applet &
 playerctld daemon
 
 # Set permanent application positioning rules
