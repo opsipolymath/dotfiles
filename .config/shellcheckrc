@@ -1,0 +1,37 @@
+# ShellCheck defaults. Found after any .shellcheckrc/shellcheckrc in the
+# script's directory or its parents, and after ~/.shellcheckrc; the first file
+# found wins and files are not merged. List optional checks with:
+#   shellcheck --list-optional
+
+# Braces around every variable reference: "${var}", not "$var".
+# Positional and special parameters ($1, $?, $#) are exempt.
+enable=require-variable-braces
+
+# Quote variables even when their current value is safe unquoted.
+enable=quote-safe-variables
+
+# Use [[ ]] rather than [ ] in bash scripts; scripts with an sh shebang are exempt.
+enable=require-double-brackets
+
+# Use `command -v`, not `which`.
+enable=deprecate-which
+
+# Write [[ -n $var ]], not [[ $var ]].
+enable=avoid-nullary-conditions
+
+# Write [[ ${a} -ne 1 ]] / [[ ${a} != "${b}" ]], not ! [[ ${a} -eq 1 ]] /
+# [[ ! ${a} == "${b}" ]]. Applies to [ ] and [[ ]] only; (( )) is not checked.
+enable=avoid-negated-conditions
+
+# Flag `cat file | cmd` and similar.
+enable=useless-use-of-cat
+
+# Every case statement gets a *) branch, even if it only documents that
+# nothing else is expected.
+enable=add-default-case
+
+# Warn on uppercase variables that are read but never assigned. Shell-provided
+# variables (HOME, PATH, ...) are exempt, as is any reference with a default or
+# check: ${XDG_CONFIG_HOME:-${HOME}/.config}, ${GPGKEY:?}. Environment variables
+# should always be read that way.
+enable=check-unassigned-uppercase
