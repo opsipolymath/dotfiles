@@ -1,41 +1,36 @@
-#! /bin/sh
+#!/usr/bin/env bash
+# Power menu in rofi: lock, log out of bspwm, reboot, or power off.
+# Called by: sxhkd (super + q)
+# Requires: rofi, bspc, loginctl, systemctl, rofi-confirmation
+lock_icon='󰍁'
+exit_icon=''
+reboot_icon='󰦛'
+poweroff_icon='󰐥'
 
-__prompt="$(hostname)"
-__msg="Uptime: $(uptime -p | sed -e 's/up //')"
+# Uptime is informational; show the menu even if it cannot be read.
+uptime_text=$(uptime -p 2>/dev/null) || uptime_text='unknown'
 
-__lock="󰍁"
-__exit=""
-__reboot="󰦛"
-__poweroff="󰐥"
-
-rofi_cmd() {
+# -no-custom accepts only the listed icons; dismissing rofi exits non-zero.
+selected=$(printf '%s\n' "${lock_icon}" "${exit_icon}" "${reboot_icon}" "${poweroff_icon}" |
 	rofi -theme-str 'textbox-prompt {str: "󰐥";}' \
-		-dmenu -p "$__prompt" \
-		-mesg "$__msg" \
-		-markup-rows \
-		-theme applet
-}
+		-dmenu \
+		-no-custom \
+		-p "${HOSTNAME:-Power}" \
+		-mesg "Uptime: ${uptime_text#up }" \
+		-theme applet) || exit 0
 
-__selected="$( echo -e "${__lock}\n${__exit}\n${__reboot}\n${__poweroff}" | rofi_cmd )"
-
-case "${__selected}" in
-	$__lock)
-		loginctl lock-session
-		exit
-		;;
-	$__exit)
-		hyprctl dispatch exit
-		exit
-		;;
-	$__reboot)
-		if $HOME/.local/bin/rofi-confirmation "Really reboot?"; then
-			systemctl reboot
+case ${selected} in
+	"${lock_icon}") exec loginctl lock-session ;;
+	"${exit_icon}") exec bspc quit ;;
+	"${reboot_icon}")
+		if rofi-confirmation 'Really reboot?'; then
+			exec systemctl reboot
 		fi
 		;;
-	$__poweroff)
-		if $HOME/.local/bin/rofi-confirmation "Really shutdown?"; then
-			systemctl poweroff
+	"${poweroff_icon}")
+		if rofi-confirmation 'Really shut down?'; then
+			exec systemctl poweroff
 		fi
 		;;
+	*) ;;
 esac
-

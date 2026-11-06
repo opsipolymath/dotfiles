@@ -24,7 +24,7 @@ set mail_check_stats          = yes
 set mail_check_stats_interval = 60
 set sort                      = threads
 set sort_aux                  = last-date-received
-set hdr_format                = "%4C %Z %{%b %d} %-15.15n (%4l) %s"
+set index_format              = "%4C %Z %{%b %d} %-15.15n (%4l) %s"
 
 unset imap_passive
 set imap_keepalive = 60

@@ -1,6 +1,8 @@
-# ${XDG_CONFIG_HOME}/dotfiles/info/exclude.master
+# Git exclusions for the dotfiles repository, shared by every host.
 #
-# Master git exclusions for dotfiles repo.
+# Git reads info/exclude, not this file. On a fresh install, copy this file to
+# info/exclude, then add any exclusions for that host only to the copy:
+#   cp ~/.config/dotfiles/info/exclude.shared ~/.config/dotfiles/info/exclude
 
 # Exclude everything by default; allow selected paths below
 /*
@@ -46,12 +48,13 @@
 .config/spotify*/
 .config/ssh/
 .config/systemd/user/default.target.wants/
+.config/systemd/user/timers.target.wants/
 .config/systemd/user/dbus-org.bluez.obex.service
 .config/tor/
 .config/unity3d/
 .config/vlc/
 .config/yams/
-.config/Yubico
+.config/Yubico/
 
 # cmus - Ignore everything except config
 .config/cmus/*
@@ -65,9 +68,6 @@
 !.config/Code - OSS/User/keybindings.json
 !.config/Code - OSS/User/snippets/
 
-# mopidy - Don't track config with secrets added
-.config/mopidy/mopidy.conf
-
 # ncspot - Track configuration only; exclude user state and authentication data
 .config/ncspot/*
 !.config/ncspot/config.toml
@@ -78,28 +78,22 @@
 !.config/neomutt/keybinds
 !.config/neomutt/nord
 
+# Shell history and completion caches, including older layouts and other hosts
+.config/**/.histfile
+.config/**/.zcompdump*
+
 # Ignore specific files in tracked directories
-.config/bashdir/.histfile
 .config/cava/shaders/
 .config/ncmpcpp/error.log
-.config/nvim/.netrwhist
-.config/nvim/autoload/
-.config/nvim/plugged/
-.config/nvim/templates/
-.config/shell/.histfile
-.config/shell/zsh/.zcompdump*
 .config/tmux/plugins/
 .config/vim/.netrwhist
 .config/vim/autoload/
-.config/zsh/.histfile
-.config/zsh/.zcompdump*
-.config/zsh/zmodules-enabled/
 
-# Track dotfiles master exclusion file only
+# Track the shared exclusion file only, not the repository or local exclusions
 .config/dotfiles/*
 !.config/dotfiles/info
 .config/dotfiles/info/*
-!.config/dotfiles/info/exclude.master
+!.config/dotfiles/info/exclude.shared
 
 # Track local directory
 !.local
@@ -127,7 +121,7 @@
 .local/share/icons/*
 !.local/share/icons/dunst/
 
-# Track custom fints
+# Track custom fonts
 !.local/share/fonts
 
 # Backup files, merge leftovers, and editor swap files

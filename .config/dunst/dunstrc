@@ -9,9 +9,10 @@
 
 	# Geometry
 	width = 300
-	height = 300
+	# Grow with the content up to 300 pixels (dunst 1.12+ syntax for the old behaviour)
+	height = (0, 300)
 	origin = top-right
-	offset = 8x8
+	offset = (8, 8)
 	scale = 0
 	notification_limit = 20
 
@@ -52,7 +53,7 @@
 
 	# Icons
 	enable_recursive_icon_lookup = true
-	icon_corners = 0
+	icon_corners = all
 	icon_corner_radius = 0
 	icon_position = left
 	icon_theme = Adwaita
@@ -66,7 +67,7 @@
 
 	# Applications
 	dmenu = /usr/bin/rofi -dmenu -p "dunst:"
-	browser = /usr/bin/brave
+	browser = /usr/bin/vivaldi
 	always_run_script = true
 
 	# Mouse

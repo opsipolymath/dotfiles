@@ -1,47 +1,92 @@
 #!/usr/bin/env bash
 # ncmpcpp launcher with optional bspwm layout/visualizer integration.
+# Usage: music [run] [NCMPCPP-OPTIONS] | music help
+# Requires: ncmpcpp; optionally bspwm, bsp-layout, alacritty, cava, jq
 usage() {
 	cat <<'HELP'
-Usage: music [run [NCMPCPP-OPTIONS] | help]
+Usage: music [run] [NCMPCPP-OPTIONS]
+       music help
 
 Examples:
   music
   music run
-  music run --host localhost
+  music --host localhost
 
-Runs ncmpcpp normally outside bspwm. With BSPWM_SOCKET and bsp-layout present,
-switches to the wide layout, launches cava in Alacritty, and restores the layout
-on exit. Only the visualizer process launched here is stopped.
+The run command is optional; any other arguments are passed to ncmpcpp.
+
+Runs ncmpcpp normally outside bspwm, or when an integration command is
+missing. Otherwise switches the desktop to the wide layout, launches cava in
+Alacritty, and restores that desktop's original layout on exit. Only the
+visualizer process launched here is stopped.
 HELP
 }
+
+# EXIT trap for run_player. It reads run_player's locals through bash's
+# dynamic scoping: desktop, original_layout, native_layout, layout_changed and
+# visualizer_pid.
 cleanup_player() {
-	if [[ -n $visualizer_pid ]]; then
+	if [[ -n ${visualizer_pid} ]]; then
 		kill -- "-${visualizer_pid}" 2>/dev/null
-		wait "$visualizer_pid" 2>/dev/null
+		wait "${visualizer_pid}" 2>/dev/null
 	fi
-	bsp-layout set "$layout" >/dev/null 2>&1
+	[[ ${layout_changed} == true ]] || return 0
+	# bsp-layout get prints - for a desktop it does not manage. Setting - would
+	# fail, so remove the temporary layout and restore bspwm's own instead.
+	if [[ ${original_layout} == - ]]; then
+		bsp-layout remove "${desktop}" >/dev/null 2>&1 ||
+			printf 'Unable to remove temporary layout on %s\n' "${desktop}" >&2
+		bspc desktop "${desktop}" -l "${native_layout}" >/dev/null 2>&1 ||
+			printf 'Unable to restore native layout on %s\n' "${desktop}" >&2
+		return 0
+	fi
+	bsp-layout set "${original_layout}" "${desktop}" >/dev/null 2>&1 ||
+		printf 'Unable to restore layout on %s\n' "${desktop}" >&2
 }
 
 run_player() (
-	local layout visualizer_pid=''
-	if [[ -z ${BSPWM_SOCKET:-} ]] || ! command -v bsp-layout >/dev/null 2>&1; then
-		command ncmpcpp -q "$@"
-		return $?
+	local dependency desktop original_node original_layout native_layout desktop_state
+	local visualizer_pid='' layout_changed=false
+	# Time for the visualizer window to appear before focus moves back.
+	local window_delay=0.5
+	if [[ -z ${BSPWM_SOCKET:-} ]]; then
+		exec ncmpcpp -q "$@"
 	fi
-	layout=$(bsp-layout get) || return 1
+	for dependency in bsp-layout bspc setsid alacritty cava jq; do
+		if ! command -v "${dependency}" >/dev/null 2>&1; then
+			printf 'Missing %s; running ncmpcpp without the visualizer\n' "${dependency}" >&2
+			exec ncmpcpp -q "$@"
+		fi
+	done
+
+	# Record the desktop by name so cleanup restores it even if focus moves.
+	desktop=$(bspc query -D -d focused --names) || return 1
+	original_node=$(bspc query -N -n focused) || original_node=''
+	original_layout=$(bsp-layout get "${desktop}") || return 1
+	desktop_state=$(bspc query -T -d focused) || return 1
+	native_layout=$(jq -er '.layout | select(. == "tiled" or . == "monocle")' <<< "${desktop_state}") || return 1
 	trap 'cleanup_player' EXIT
 	trap 'exit 130' INT
 	trap 'exit 143' TERM
-	bsp-layout set wide >/dev/null 2>&1 || return 1
-	command setsid alacritty -e cava >/dev/null 2>&1 &
+	layout_changed=true
+	bsp-layout set wide "${desktop}" >/dev/null 2>&1 || return 1
+	# A background job of a non-interactive shell is not a process group
+	# leader, so setsid execs in place: $! becomes the session ID, which lets
+	# cleanup_player kill the visualizer's whole process group.
+	setsid alacritty -e cava >/dev/null 2>&1 &
 	visualizer_pid=$!
-	sleep 0.5
-	bspc node -f 'prev.local.!hidden.window'
+	sleep "${window_delay}"
+	# Refocus the window that was focused before, unless the user moved away.
+	if [[ -n ${original_node} && $(bspc query -D -d focused --names) == "${desktop}" ]]; then
+		bspc node "${original_node}" -f >/dev/null 2>&1
+	fi
 	command ncmpcpp -q "$@"
 )
 
-case ${1:-run} in
-	help|-h|--help) usage ;;
-	run) (( $# == 0 )) || shift; run_player "$@" ;;
-	*) run_player "$@" ;;
-esac
+main() {
+	case ${1:-run} in
+		help|-h|--help) usage ;;
+		run) (( $# == 0 )) || shift; run_player "$@" ;;
+		*) run_player "$@" ;;
+	esac
+}
+main "$@"

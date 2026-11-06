@@ -1,34 +1,47 @@
 #!/usr/bin/env bash
-
+# Send a media command to the most relevant player.
 # Prefer playing Spotify, then playing MPD, then paused Spotify, otherwise MPD.
-action=${1-}
-case "${action}" in
+# Usage: media_control {play-pause|next|previous|stop}
+# Called by: sxhkd (XF86Audio* keys)
+# Requires: playerctl, mpc (0.34 or later for formatted status)
+usage() {
+	printf 'Usage: %s {play-pause|next|previous|stop}\n' "${0##*/}" >&2
+}
+
+if (( $# != 1 )); then
+	usage
+	exit 2
+fi
+action=$1
+case ${action} in
 	play-pause) mpd_action=toggle ;;
 	next) mpd_action=next ;;
 	previous) mpd_action=prev ;;
 	stop) mpd_action=stop ;;
 	*)
-		printf 'Usage: %s {play-pause|next|previous|stop}\n' "$0" >&2
+		usage
 		exit 2
 		;;
 esac
 
-spotify_player=''
+paused_spotify=''
 while IFS= read -r player; do
-	[[ ${player} == spotify* ]] || continue
+	# Spotify's MPRIS name is spotify, or spotify.instanceN for extra instances.
+	[[ ${player} == spotify || ${player} == spotify.* ]] || continue
 	status=$(playerctl --player="${player}" status 2>/dev/null) || continue
 	if [[ ${status} == Playing ]]; then
 		exec playerctl --player="${player}" "${action}"
 	fi
-	if [[ ${status} == Paused && -z ${spotify_player} ]]; then
-		spotify_player=${player}
+	if [[ ${status} == Paused && -z ${paused_spotify} ]]; then
+		paused_spotify=${player}
 	fi
 done < <(playerctl --list-all 2>/dev/null)
 
-if [[ -n ${spotify_player} ]]; then
-	mpd_status=$(mpc status 2>/dev/null)
-	if [[ ${mpd_status} != *'[playing]'* ]]; then
-		exec playerctl --player="${spotify_player}" "${action}"
+if [[ -n ${paused_spotify} ]]; then
+	# %state% is playing, paused or stopped, independent of mpc's display format.
+	mpd_state=$(mpc status '%state%' 2>/dev/null) || mpd_state=''
+	if [[ ${mpd_state} != playing ]]; then
+		exec playerctl --player="${paused_spotify}" "${action}"
 	fi
 fi
 

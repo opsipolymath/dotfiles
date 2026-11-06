@@ -5,6 +5,8 @@ set -b
 set -o vi
 bind 'set bell-style visible'
 bind -m vi-insert '"\C-l":clear-screen'
+HISTFILE="${XDG_STATE_HOME:-${HOME}/.local/state}/shell/bash_history"
+shell_prepare_history || return 1
 HISTCONTROL=ignoreboth:erasedups
 HISTFILESIZE=200000
 
@@ -17,17 +19,21 @@ shell_read_char() {
 	IFS= read -r -n 1 "$1"
 }
 
-# Preserve existing scalar or array prompt commands and avoid duplicate hooks.
-if ! declare -p PROMPT_COMMAND 2>/dev/null | grep -q '^declare -a '; then
-	if [[ -n ${PROMPT_COMMAND:-} ]]; then
-		PROMPT_COMMAND=("$PROMPT_COMMAND")
-	else
-		PROMPT_COMMAND=()
+# Add a hook to PROMPT_COMMAND once. A scalar value, such as one set by
+# /etc/bash.bashrc, is first converted to an array so it is preserved.
+shell_add_prompt_command() {
+	if [[ ${PROMPT_COMMAND@a} != *a* ]]; then
+		if [[ -n ${PROMPT_COMMAND:-} ]]; then
+			PROMPT_COMMAND=("${PROMPT_COMMAND}")
+		else
+			PROMPT_COMMAND=()
+		fi
 	fi
-fi
-if [[ " ${PROMPT_COMMAND[*]} " != *' shell_sync_history '* ]]; then
-	PROMPT_COMMAND+=(shell_sync_history)
-fi
+	if [[ " ${PROMPT_COMMAND[*]} " != *" $1 "* ]]; then
+		PROMPT_COMMAND+=("$1")
+	fi
+}
+shell_add_prompt_command shell_sync_history
 
 # shellcheck source=keybinds
 source "${BDOTDIR}/keybinds"

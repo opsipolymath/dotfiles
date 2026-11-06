@@ -1,5 +1,9 @@
 # Completion settings
 
+# zsh/complist provides menu selection and list colours; load it before
+# compinit, as the zshmodules manual advises.
+zmodload zsh/complist
+
 # -- Enable/disable options
 # List directories separately and before files
 zstyle ':completion:*' list-dirs-first true
@@ -61,12 +65,12 @@ zstyle ':completion:*' preserve-prefix '//'
 [[ -d "${ZDOTDIR}/completions" ]] &&
 	fpath=("${ZDOTDIR}/completions" "${fpath[@]}")
 
-# Relocate completion cache to cache directory
-export XDG_CACHE_HOME="${XDG_CACHE_HOME:-${HOME}/.cache}"
-mkdir -p "${XDG_CACHE_HOME}/zsh"
+# Relocate completion cache to cache directory (XDG_CACHE_HOME comes from
+# shellenv, which .zshenv has already read).
+[[ -d ${XDG_CACHE_HOME}/zsh ]] || mkdir -p -- "${XDG_CACHE_HOME}/zsh"
 ZSH_COMPDUMP="${XDG_CACHE_HOME}/zsh/zcompdump"
 
 # Load completion module and initialize it
 autoload -Uz compinit
-compinit -d "$ZSH_COMPDUMP"
+compinit -d "${ZSH_COMPDUMP}"
 

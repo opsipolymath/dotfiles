@@ -1,41 +1,35 @@
 #!/usr/bin/env bash
-
-# Display headphones or speakers based on the default audio sink.
+# Print a headphones or speakers icon for the default audio sink.
+# Called by: polybar (exec, interval = 10); %{R} reverses the module colours.
+# Requires: pactl (PulseAudio or pipewire-pulse), jq
 
 headphones='󰋎'
 speakers='󱌈'
 
-# Identify the default sink.
+# Identify the default sink; without an audio server, hide the module.
 sink=$(pactl get-default-sink 2>/dev/null) || exit 0
+[[ -n ${sink} ]] || exit 0
 
-# USB DAC or Bluetooth output.
-if [[ $sink == *Schiit* || $sink == bluez_sink* ]]; then
-    printf '%%{R} %s \n' "$headphones"
-    exit 0
+# USB DAC or Bluetooth output. Bluetooth sinks are bluez_sink.* under
+# PulseAudio and bluez_output.* under PipeWire.
+if [[ ${sink} == *Schiit* || ${sink} == bluez_* ]]; then
+	printf '%%{R} %s \n' "${headphones}"
+	exit 0
 fi
 
-# Determine the active port of the default sink.
-port=$(
-    pactl list sinks 2>/dev/null |
-    awk -v sink="$sink" '
-        /^[[:space:]]*Name:/ {
-            active = ($2 == sink)
-        }
-        active && /^[[:space:]]*Active Port:/ {
-            print $3
-            exit
-        }
-    '
-)
+# Determine the active port of the default sink. JSON port names are not
+# translated, unlike the labels in pactl's plain output. Any failure leaves
+# port empty, which shows the speakers icon.
+if ! command -v jq >/dev/null 2>&1; then
+	printf 'Required command is not installed: jq\n' >&2
+fi
+port=$(pactl --format=json list sinks 2>/dev/null |
+	jq -r --arg sink "${sink}" 'first(.[] | select(.name == $sink)) | .active_port // empty' 2>/dev/null)
 
 # Select icon.
-case "$port" in
-    *headphones* | *headset*)
-        icon=$headphones
-        ;;
-    *)
-        icon=$speakers
-        ;;
+case ${port} in
+	*headphones* | *headset*) icon=${headphones} ;;
+	*) icon=${speakers} ;;
 esac
 
-printf '%%{R} %s \n' "$icon"
+printf '%%{R} %s \n' "${icon}"

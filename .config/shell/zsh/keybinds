@@ -1,9 +1,9 @@
-# Keybindings for consoles/ssh
+# zsh line editor (ZLE) keybindings. completion loads zsh/complist, which
+# provides the menuselect keymap used at the end of this file.
 
-# Load the modules for searching and completions
+# Load the history search widgets
 autoload -U up-line-or-beginning-search
 autoload -U down-line-or-beginning-search
-zmodload zsh/complist
 
 # Create widgets to enable searching with arrow keys
 zle -N up-line-or-beginning-search

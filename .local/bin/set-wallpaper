@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Set a random wallpaper, and render a blurred, dimmed copy for the lock screen.
+# Usage: set-wallpaper [DIRECTORY]
+# Called by: bspwmrc at startup; sxhkd (super + shift + Escape; w)
+# Requires: feh, xsetroot (xorg-xsetroot), magick (imagemagick), xrandr,
+#           flock (util-linux); optionally xdg-user-dir
+#
+# Images come from DIRECTORY, else WALLPAPER_DIR, else Wallpapers in the XDG
+# pictures directory (normally ~/Pictures/Wallpapers). With no images there,
+# the packaged default is used (WALLPAPER_DEFAULT overrides its path), and
+# without that, a solid Nord background. lock-screen shows the rendered image.
+# Exit status: 0 when an image is set, 1 when the solid background is used
+# instead, and 2 when even that fails.
+shopt -s nullglob
+
+default_image=${WALLPAPER_DEFAULT:-/usr/share/yggdrasil/wallpaper.jpg}
+lock_dir=${XDG_CACHE_HOME:-${HOME}/.cache}/lock-screen
+lock_image=${lock_dir}/lock.png
+# The wallpaper the lock image must show. A render publishes only while its
+# image is still the one recorded here, so an older, slower render never
+# replaces a newer one. publish_lock is held while a wallpaper is applied and
+# recorded, and while a render publishes, so concurrent calls always leave the
+# desktop and the lock image showing the same wallpaper.
+current_file=${lock_dir}/current
+publish_lock=${lock_dir}/publish.lock
+
+# Record the wallpaper the lock image must match ('' for none), atomically.
+set_current() {
+	local temporary
+	temporary=$(mktemp "${current_file}.XXXXXX") || return 1
+	printf '%s\n' "$1" > "${temporary}" && mv -f -- "${temporary}" "${current_file}"
+}
+
+# Without any usable image, paint Nord's darkest background instead, so the
+# desktop is never left at the X server's default. The old lock image is
+# removed, and pending renders discarded, so the lock screen is solid Nord too.
+# Called with publish_lock held. Exits 1, or 2 if even xsetroot fails.
+fallback() {
+	local status=1
+	printf 'ERROR: %s; using a solid background\n' "$1" >&2
+	if ! xsetroot -solid '#2e3440'; then
+		printf 'ERROR: Unable to set the solid background\n' >&2
+		status=2
+	fi
+	if set_current ''; then
+		rm -f -- "${lock_image}"
+	fi
+	exit "${status}"
+}
+
+pictures_dir=$(xdg-user-dir PICTURES 2>/dev/null) || pictures_dir=''
+wallpaper_dir=${1:-${WALLPAPER_DIR:-${pictures_dir:-${HOME}/Pictures}/Wallpapers}}
+
+images=()
+if [[ -d ${wallpaper_dir} ]]; then
+	images=("${wallpaper_dir}"/*.{jpg,jpeg,png,JPG,JPEG,PNG})
+fi
+
+# Hold publish_lock from here until the wallpaper is recorded. Without a cache
+# directory, the wallpaper is still set, but no lock image is rendered.
+if mkdir -p -- "${lock_dir}" && exec 9>"${publish_lock}"; then
+	flock 9
+fi
+
+if (( ${#images[@]} == 0 )); then
+	if [[ ! -r ${default_image} ]]; then
+		fallback "No images in ${wallpaper_dir}, and no default ${default_image}"
+	fi
+	# Expected on a new account, so only a folder chosen explicitly is reported.
+	if [[ -n ${1:-}${WALLPAPER_DIR:-} ]]; then
+		printf 'No JPEG or PNG images in %s; using the default wallpaper\n' "${wallpaper_dir}" >&2
+	fi
+	images=("${default_image}")
+fi
+image=${images[RANDOM % ${#images[@]}]}
+
+if ! feh --no-fehbg --bg-fill "${image}"; then
+	fallback "Unable to set ${image}"
+fi
+
+# Render the lock image at the screen's size: i3lock shows a PNG unscaled.
+# Rendering takes a few seconds, so it runs in the background, into its own
+# temporary file renamed into place only once complete; until then, the lock
+# screen shows the previous render.
+render_lock_image() {
+	local size temporary
+	size=$(xrandr --current 2>/dev/null | sed -n 's/.* current \([0-9]*\) x \([0-9]*\),.*/\1x\2/p')
+	[[ -n ${size} ]] || return 1
+	temporary=$(mktemp "${lock_dir}/lock.XXXXXX") || return 1
+	if ! magick "${image}" -resize "${size}^" -gravity center -extent "${size}" \
+		-blur 0x8 -fill black -colorize 40% "PNG:${temporary}"; then
+		rm -f -- "${temporary}"
+		return 1
+	fi
+	(
+		flock 9 || exit 1
+		if [[ -r ${current_file} && $(< "${current_file}") == "${image}" ]]; then
+			mv -f -- "${temporary}" "${lock_image}"
+			exit
+		fi
+		rm -f -- "${temporary}"
+	) 9>"${publish_lock}"
+}
+# Release publish_lock before rendering; otherwise the script exits, releasing it.
+if set_current "${image}"; then
+	exec 9>&-
+	render_lock_image >/dev/null 2>&1 &
+fi

@@ -1,35 +1,50 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
+# Show sxhkd hotkeys and their descriptions in rofi.
+# Called by: sxhkd (super + slash)
+# Requires: awk, column (util-linux), rofi
+#
+# Expects sxhkdrc sections as "# -- Name" lines and each hotkey preceded by a
+# "# Description" comment line.
+#
 # Inspired by a post by Wallace on the blog "My Take on Tech" found at
 # https://my-take-on.tech/2020/07/03/some-tricks-for-sxhkd-and-bspwm/
 # published 3 July 2020.
 
-__AWK_PROCESS_SXHKDRC=$( cat << 'EOF'
-	# Process section header lines
-	/^# --/ {
-		if ( !($0 == "# -- General") )
-			print ""
-		print "<small>\t</small>   ",substr($0,6)
-	}
-	# Process hotkey lines
-	/^[a-z@]/ && explanation {
-		if ( !(substr($0,1,1) ~ /[a-zA-Z]/) )
-			$0=substr($0,2)
-		print "<small>",$0,"\t",explanation,"</small>"
-	}
-	# If not a header, hotkey, or explanation, unset variable
-	explanation=""
-	# Process hotkey explanation lines
-	/^#/ {
-		explanation=$0
-	}
-EOF
-)
+sxhkdrc=${XDG_CONFIG_HOME:-${HOME}/.config}/sxhkd/sxhkdrc
 
-awk "${__AWK_PROCESS_SXHKDRC}" ~/.config/sxhkd/sxhkdrc |
+if [[ ! -r ${sxhkdrc} ]]; then
+	printf 'Cannot read sxhkd configuration: %s\n' "${sxhkdrc}" >&2
+	exit 1
+fi
+
+awk '
+	# Rows are Pango markup, so a literal & < or > would break the row.
+	function escape_markup(text) {
+		gsub(/&/, "\\&amp;", text)
+		gsub(/</, "\\&lt;", text)
+		gsub(/>/, "\\&gt;", text)
+		return text
+	}
+	# Section header: print a blank line before every section but the first.
+	/^# --/ {
+		if (sections++)
+			print ""
+		print "<small>\t</small>   ", escape_markup(substr($0, 6))
+	}
+	# Hotkey: any unindented, non-comment line. Commands are indented.
+	/^[^#[:space:]]/ && explanation {
+		# Drop the @ (on release) and ~ (replay) prefixes for display.
+		sub(/^[@~]/, "")
+		print "<small>", escape_markup($0), "\t", escape_markup(explanation), "</small>"
+	}
+	# Every line clears the pending description; the next rule then records
+	# it again if this line is itself a comment.
+	{ explanation = "" }
+	/^#/ { explanation = $0 }
+' "${sxhkdrc}" |
 	column -L -t -s $'\t' |
 	rofi -theme-str 'textbox-prompt {str: "󱠃";}' \
 		-dmenu -i \
 		-p "sxhkd Help Menu" \
 		-markup-rows \
-		-theme menu 
+		-theme menu

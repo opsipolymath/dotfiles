@@ -16,6 +16,7 @@ case "${window_class}:${window_instance}" in
 		spotify_rule
 		exit 0
 		;;
+	*) ;;
 esac
 
 # Fall back to the process ID when Spotify's startup class is empty or generic.
@@ -28,6 +29,7 @@ if [ -n "${process_id}" ]; then
 			spotify_rule
 			exit 0
 			;;
+		*) ;;
 	esac
 fi
 
@@ -41,6 +43,7 @@ case "${window_name}" in
 	*Steam*)
 		printf 'desktop=%s\n' "${steam_desktop}"
 		;;
+	*) ;;
 esac
 
 exit 0

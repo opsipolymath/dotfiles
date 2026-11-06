@@ -9,12 +9,14 @@ bindkey -v
 KEYTIMEOUT=10
 bindkey '^L' clear-screen
 
+HISTFILE="${XDG_STATE_HOME:-${HOME}/.local/state}/shell/zsh_history"
+shell_prepare_history || return 1
 SAVEHIST=200000
 setopt appendhistory incappendhistory histignorealldups histignorespace
 unsetopt sharehistory
 
 shell_sync_history() {
-	fc -RI "$HISTFILE"
+	fc -RI "${HISTFILE}"
 }
 
 shell_read_char() {

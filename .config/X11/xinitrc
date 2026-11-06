@@ -22,6 +22,12 @@ if [ -d "${user_xinit_dir}" ]; then
 	unset startup_file
 fi
 
+# Create or update the XDG user directories once per session. Its systemd user
+# service waits for graphical-session-pre.target, which startx never reaches.
+if command -v xdg-user-dirs-update >/dev/null 2>&1; then
+	xdg-user-dirs-update
+fi
+
 # Unset variables
 unset x11_config_dir global_xinit_dir user_xinit_dir
 

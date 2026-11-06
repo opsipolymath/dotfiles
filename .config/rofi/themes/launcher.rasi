@@ -9,11 +9,9 @@ configuration {
 	display-run: "";
 	display-filebrowser: "";
 	display-windowcd: "";
-	//display-ssh:           "";
 	display-wifi: "";
 	drun-display-format: "{name}";
 	window-format: "{w} · {c} · {t}";
-	parse-known-hosts: false;
 }
 
 window {

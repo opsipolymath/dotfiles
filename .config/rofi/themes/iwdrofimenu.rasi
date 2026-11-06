@@ -1,0 +1,11 @@
+// Applied by iwdrofimenu only while its Wi-Fi menu is shown (rofi_theme_file in
+// iwdrofimenu.conf). Hide its PNG icons, since its templates use Nerd Font
+// glyphs, and keep its tab stop for the connection details view.
+
+element-icon {
+	enabled: false;
+}
+
+element-text {
+	tab-stops: [0px, 350px];
+}

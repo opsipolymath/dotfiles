@@ -1,47 +1,60 @@
 #!/usr/bin/env bash
-# Polybar media: --icon (single result) or --text (continuous ticker).
+# Polybar media module: --icon (print once) or --text (continuous ticker).
 # Spotify via MPRIS; MPD via mpc, no MPD MPRIS bridge needed.
+# Usage: scroll_media_status [--icon|--text]
+# Called by: polybar (--icon with interval = 2; --text as a tailed module)
+# Requires: playerctl, mpc 0.34 or later (either may be absent)
 
 mode=${1:---text}
 width=30
-frame_delay=0.5
 scroll_gap='   '
+frame_delay=0.5
 
 format_time() {
 	local seconds=$1
 	if (( seconds >= 3600 )); then
 		printf '%d:%02d:%02d' "$((seconds / 3600))" "$((seconds / 60 % 60))" "$((seconds % 60))"
-	else
-		printf '%d:%02d' "$((seconds / 60))" "$((seconds % 60))"
+		return
 	fi
+	printf '%d:%02d' "$((seconds / 60))" "$((seconds % 60))"
 }
 
+# Convert M:SS or H:MM:SS to seconds; print 0 for anything else.
 to_seconds() {
-	local value=$1 h=0 m=0 s=0
-	local -a parts
-	IFS=: read -r -a parts <<< "$value"
-	case ${#parts[@]} in
-		2) m=${parts[0]}; s=${parts[1]} ;;
-		3) h=${parts[0]}; m=${parts[1]}; s=${parts[2]} ;;
-		*) printf '0'; return ;;
-	esac
-	printf '%d' "$((10#$h * 3600 + 10#$m * 60 + 10#$s))"
+	local value=$1 hours=0 minutes seconds
+	if [[ ! ${value} =~ ^([0-9]{1,6}):([0-9]{2})(:([0-9]{2}))?$ ]]; then
+		printf '0'
+		return
+	fi
+	minutes=${BASH_REMATCH[1]}
+	seconds=${BASH_REMATCH[2]}
+	if [[ -n ${BASH_REMATCH[3]} ]]; then
+		hours=${minutes}
+		minutes=${seconds}
+		seconds=${BASH_REMATCH[4]}
+	fi
+	printf '%d' "$((10#${hours} * 3600 + 10#${minutes} * 60 + 10#${seconds}))"
 }
 
 get_spotify() {
-	local player raw artist song time_text
+	local player status metadata artist song time_text
 	command -v playerctl >/dev/null 2>&1 || return 1
 	while IFS= read -r player; do
-		[[ $player == spotify* ]] || continue
-		[[ $(playerctl --player="$player" status 2>/dev/null) == Playing ]] || continue
-		source=spotify
-		if [[ $mode == --icon ]]; then
+		# Spotify's MPRIS name is spotify, or spotify.instanceN for extra instances.
+		[[ ${player} == spotify || ${player} == spotify.* ]] || continue
+		status=$(playerctl --player="${player}" status 2>/dev/null) || continue
+		[[ ${status} == Playing ]] || continue
+		player_source=spotify
+		if [[ ${mode} == --icon ]]; then
 			return 0
 		fi
-		raw=$(playerctl --player="$player" metadata \
+		# Spotify is known to be playing even if its metadata query fails;
+		# refresh's placeholders are shown in that case.
+		metadata=$(playerctl --player="${player}" metadata \
 			--format $'{{ artist }}\x1f{{ title }}\x1f{{ duration(mpris:length - position) }}' \
-			2>/dev/null) || return 1
-		IFS=$'\x1f' read -r artist song time_text <<< "$raw"
+			2>/dev/null) || return 0
+		metadata=${metadata//$'\n'/ }
+		IFS=$'\x1f' read -r artist song time_text <<< "${metadata}"
 		title="${artist:-Unknown artist} - ${song:-Unknown title}"
 		remaining=${time_text:-?:??}
 		return 0
@@ -50,43 +63,80 @@ get_spotify() {
 }
 
 get_mpd() {
-	local output line artist song elapsed duration elapsed_seconds duration_seconds
+	local status state metadata artist song elapsed duration elapsed_seconds duration_seconds
 	command -v mpc >/dev/null 2>&1 || return 1
-	output=$(mpc status 2>/dev/null) || return 1
-	[[ $output == *'[playing]'* ]] || return 1
-	source=mpd
-	[[ $mode == --icon ]] && return 0
-
-	line=$(mpc current --format $'%artist%\x1f%title%' 2>/dev/null) || return 1
-	IFS=$'\x1f' read -r artist song <<< "$line"
-	title="${artist:-Unknown artist} - ${song:-Unknown title}"
-	remaining='?:??'
-	if [[ $output =~ ([0-9]+:[0-9]+(:[0-9]+)?)/([0-9]+:[0-9]+(:[0-9]+)?) ]]; then
-		elapsed=${BASH_REMATCH[1]}
-		duration=${BASH_REMATCH[3]}
-		elapsed_seconds=$(to_seconds "$elapsed")
-		duration_seconds=$(to_seconds "$duration")
-		if (( duration_seconds > 0 )); then
-			remaining=$(format_time "$((duration_seconds > elapsed_seconds ? duration_seconds - elapsed_seconds : 0))")
-		fi
+	# Formatted fields avoid parsing mpc's human-readable status display.
+	status=$(mpc status $'%state%\x1f%currenttime%\x1f%totaltime%' 2>/dev/null) || return 1
+	IFS=$'\x1f' read -r state elapsed duration <<< "${status}"
+	[[ ${state} == playing ]] || return 1
+	player_source=mpd
+	if [[ ${mode} == --icon ]]; then
+		return 0
 	fi
+
+	elapsed_seconds=$(to_seconds "${elapsed}")
+	duration_seconds=$(to_seconds "${duration}")
+	if (( duration_seconds > 0 )); then
+		remaining=$(format_time "$((duration_seconds > elapsed_seconds ? duration_seconds - elapsed_seconds : 0))")
+	fi
+	metadata=$(mpc current --format $'%artist%\x1f%title%' 2>/dev/null) || return 0
+	metadata=${metadata//$'\n'/ }
+	IFS=$'\x1f' read -r artist song <<< "${metadata}"
+	title="${artist:-Unknown artist} - ${song:-Unknown title}"
 	return 0
 }
 
+# Sets the globals player_source (spotify, mpd or idle), title and remaining.
+# The placeholders remain when a player is playing but its metadata fails.
 refresh() {
-	source=idle
-	title=''
-	remaining=''
+	player_source=idle
+	title='Metadata unavailable'
+	remaining='?:??'
 	get_spotify || get_mpd || :
 }
 
-case $mode in
+# Print one ticker frame and advance the global offset.
+render_text() {
+	local full_text loop
+	display='No music is currently playing'
+	if [[ ${player_source} != idle ]]; then
+		# Control characters in tags would corrupt Polybar's line-based input.
+		full_text="${title} [${remaining}]"
+		full_text=${full_text//[[:cntrl:]]/ }
+		display=${full_text}
+		if (( ${#full_text} > width )); then
+			loop=${full_text}${scroll_gap}
+			offset=$((offset % ${#loop}))
+			display=${loop:offset:width}
+			if (( ${#display} < width )); then
+				display+=${loop:0:width-${#display}}
+			fi
+			offset=$(( (offset + 1) % ${#loop} ))
+		fi
+	fi
+	# Polybar would parse %{ in a title as a formatting tag, including one formed
+	# where the scrolling text wraps; a fullwidth percent sign looks the same.
+	display=${display//'%{'/'％{'}
+	# Pad by characters; printf's %-*.*s counts bytes and would cut
+	# multibyte characters in half.
+	printf '%s%*s\n' "${display}" "$((width - ${#display}))" ''
+}
+
+usage() {
+	printf 'Usage: %s [--icon|--text]\n' "${0##*/}"
+}
+
+if (( $# > 1 )); then
+	usage >&2
+	exit 2
+fi
+case ${mode} in
 	--icon)
 		refresh
-		case $source in
+		case ${player_source} in
 			spotify) printf '󰓇\n' ;;
-			    mpd) printf '󰐹\n' ;;
-			      *) printf '󰽳\n' ;;
+			mpd) printf '󰐹\n' ;;
+			*) printf '󰽳\n' ;;
 		esac
 		;;
 	--text)
@@ -94,38 +144,23 @@ case $mode in
 		offset=0
 		frame=0
 		while :; do
+			# Query the players every other frame; scroll on every frame.
 			if (( frame % 2 == 0 )); then
 				refresh
-				track_id="$source:$title"
-				if [[ $track_id != "$old_track" ]]; then
+				track_id="${player_source}:${title}"
+				if [[ ${track_id} != "${old_track}" ]]; then
 					offset=0
-					old_track=$track_id
+					old_track=${track_id}
 				fi
 			fi
-
-			if [[ $source == idle ]]; then
-				display='No music is currently playing'
-			else
-				full_text="$title [$remaining]"
-				if (( ${#full_text} <= width )); then
-					display=$full_text
-				else
-					loop="$full_text$scroll_gap"
-					display=${loop:offset:width}
-					if (( ${#display} < width )); then
-						display+=${loop:0:width-${#display}}
-					fi
-					offset=$(( (offset + 1) % ${#loop} ))
-				fi
-			fi
-
-			printf '%-*.*s\n' "$width" "$width" "$display"
-			frame=$((frame + 1))
-			sleep "$frame_delay"
+			render_text
+			frame=$(( (frame + 1) % 2 ))
+			sleep "${frame_delay}" || exit $?
 		done
 		;;
+	-h|--help) usage ;;
 	*)
-		printf 'Usage: %s [--icon|--text]\n' "$0" >&2
+		usage >&2
 		exit 2
 		;;
 esac

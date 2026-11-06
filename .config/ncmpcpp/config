@@ -3,7 +3,7 @@
 # Directories
 ncmpcpp_directory = ~/.config/ncmpcpp
 lyrics_directory = ~/Music/lyrics
-mpd_music_dir = ~/Music/albums
+mpd_music_dir = ~/Music/Albums
 
 # Connection settings
 mpd_host = localhost
@@ -90,7 +90,7 @@ default_tag_editor_pattern = %n - %t
 show_duplicate_tags = yes
 
 # Editing
-external_editor = nvim
+external_editor = vim
 use_console_editor = yes
 
 # Playlist settings
@@ -114,7 +114,7 @@ browser_playlist_prefix = "$2playlist$9 "
 show_hidden_files_in_local_browser = no
 
 # Lyrics settings
-lyrics_fetchers = azlyrics, genius, musixmatch, sing365, metrolyrics, justsomelyrics, jahlyrics, plyrics, tekstowo, zeneszoveg, internet
+lyrics_fetchers = tags, genius, tekstowo, plyrics, justsomelyrics, jahlyrics, zeneszoveg, internet
 follow_now_playing_lyrics = yes
 fetch_lyrics_for_current_song_in_background = yes
 store_lyrics_in_song_dir = no

@@ -1,11 +1,13 @@
 # shellcheck shell=bash
-# General aliases and functions
+# General aliases. Interactive functions are loaded before these aliases.
 
 # Fix sudo so alias expansion works
 alias sudo='/usr/bin/sudo '
 
 # Fixes for applications that require arguments to respect XDG
-alias irssi='irssi --home="${XDG_CONFIG_HOME}/irssi"'
+# shellenv initializes XDG_CONFIG_HOME before aliases expand.
+# shellcheck disable=SC2154
+alias irssi='irssi --home="${XDG_CONFIG_HOME:-${HOME}/.config}/irssi"'
 
 # Default options for commonly used commands
 alias cd='cd -P'
@@ -27,7 +29,6 @@ alias emacs="emacsclient -c -a 'emacs'"
 alias info='/usr/bin/pinfo'
 alias lc='/usr/bin/latexmk -aux-directory=/tmp/latex -pdf'
 alias mkdiff='diff -U 99999'
-alias nc='music'
 alias ncmpcpp='music'
 alias nd='/usr/bin/vim -d'
 alias nv='/usr/bin/vim'
@@ -35,9 +36,11 @@ alias vi='/usr/bin/vim'
 alias se='/usr/bin/sudoedit'
 alias steam='/usr/bin/steam -nochatui -nofriendsui -silent'
 
-# Set ssh aliases to use custom config file if defined
+alias git-notes='git --git-dir="/containers/50. code-server/git/"'
+
+# Use SSH_CONFIG for scp.
 if [[ -n ${SSH_CONFIG:-} ]]; then
-	alias scp='/usr/bin/scp -F "$SSH_CONFIG"'
+	alias scp='/usr/bin/scp -F "${SSH_CONFIG}"'
 fi
 
 # The colorful SSH wrapper also honors SSH_CONFIG.

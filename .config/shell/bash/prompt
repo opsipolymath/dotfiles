@@ -11,11 +11,11 @@ PROMPT_SPLIT="${PROMPT_BLUE}]─["
 
 PROMPT_PERCENT='%'
 # shellcheck source=../prompt
-source "${BDOTDIR}/../prompt"
+source "${BDOTDIR:?}/../prompt"
 
 # Seven colour stops, matching the Zsh SSH indicator.
 prompt_ssh_indicator() {
-	[[ -n ${SSH_TTY:-} ]] || return 0
+	shell_is_ssh || return 0
 
 	local character color index
 	local -a characters=(b i f r ö s t)
@@ -25,41 +25,33 @@ prompt_ssh_indicator() {
 	for (( index = 0; index < ${#characters[@]}; index++ )); do
 		color=${colors[index]}
 		character=${characters[index]}
-		printf '\\[\\e[%sm\\]%s' "$color" "$character"
+		printf '\\[\\e[%sm\\]%s' "${color}" "${character}"
 	done
 }
 
 prompt_update() {
 	local directory_color user_part end_color host
 
-	directory_color=$PROMPT_GREEN
-	[[ -w $PWD ]] || directory_color=$PROMPT_RED
+	directory_color=${PROMPT_GREEN}
+	[[ -w ${PWD} ]] || directory_color=${PROMPT_RED}
 
 	if (( EUID == 0 )); then
 		user_part="${PROMPT_RED}odin${PROMPT_GREEN}"
-		end_color=$PROMPT_RED
+		end_color=${PROMPT_RED}
 	else
 		user_part="${PROMPT_GREEN}\\u"
-		end_color=$PROMPT_BLUE
+		end_color=${PROMPT_BLUE}
 	fi
 
-	host=$(hostname)
+	# Render the full hostname with Bash's built-in prompt escape.
+	host='\H'
 
 	PS1="${PROMPT_BLUE}┌[${directory_color}\\w$(prompt_git)${PROMPT_BLUE}]${PROMPT_RESET}"$'\n'
 	PS1+="${PROMPT_BLUE}└[$(prompt_battery)${user_part}@${host}$(prompt_ssh_indicator)${PROMPT_BLUE}]${PROMPT_RESET} ${end_color}\\\$ ${PROMPT_RESET}"
 }
 
-# Preserve pre-existing prompt hooks when PROMPT_COMMAND is an array or string.
-if ! declare -p PROMPT_COMMAND 2>/dev/null | grep -q '^declare -a '; then
-	if [[ -n ${PROMPT_COMMAND:-} ]]; then
-		PROMPT_COMMAND=("$PROMPT_COMMAND")
-	else
-		PROMPT_COMMAND=()
-	fi
-fi
-if [[ " ${PROMPT_COMMAND[*]} " != *' prompt_update '* ]]; then
-	PROMPT_COMMAND+=(prompt_update)
-fi
+# shell_add_prompt_command is defined in bashrc, which sources this file.
+shell_add_prompt_command prompt_update
 
 PS2="${PROMPT_YELLOW}»···${PROMPT_BLUE}> ${PROMPT_RESET}"
 PS3=$'\e[34mMake a selection: \e[0m'

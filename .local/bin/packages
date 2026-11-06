@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Arch package maintenance. Execute this file; do not source it.
+# Arch package maintenance: system updates and a signed local repository.
+# Usage: packages COMMAND [ARGUMENTS]   (see: packages help)
+# Requires: pacman, checkupdates (pacman-contrib), aurutils, gpg, GPGKEY set
+# Execute this file; do not source it.
 error() {
 	printf 'ERROR: %s\n' "$*" >&2
 }
@@ -9,176 +12,274 @@ msg() {
 msg2() {
 	printf '  -> %s\n' "$*"
 }
-ask() {
+progress() {
 	printf '%s' "$*"
 }
 plain() {
 	printf '%s\n' "$*"
 }
 
-# Arch package helpers. Dependencies are checked when commands are invoked.
+# Dependencies are checked when commands are invoked.
 _pkg_require() {
 	local dependency
 	for dependency in "$@"; do
-		if ! command -v "$dependency" >/dev/null 2>&1; then
+		if ! command -v "${dependency}" >/dev/null 2>&1; then
 			error "Required command is not installed: ${dependency}"
-			return 2
+			return 1
 		fi
 	done
 }
 
-aursync() {
-	_pkg_require aur || return 2
+_pkg_require_key() {
+	if [[ -z ${GPGKEY:-} ]]; then
+		error 'GPGKEY environment variable is not set'
+		return 1
+	fi
+}
+
+# Sets repo_name, repo_root and repo_path. Callers declare them local; bash's
+# dynamic scoping makes the assignments visible to the caller.
+_pkg_get_params() {
+	local repo_parameters key value
+	_pkg_require aur realpath || return 1
+	repo_parameters=$(command aur repo) || return 1
+	repo_name=''
+	repo_root=''
+	repo_path=''
+	# aur repo prints key:value lines, such as root:/srv/repo.
+	while IFS=: read -r key value; do
+		case ${key} in
+			repo) repo_name=${value} ;;
+			root) repo_root=${value} ;;
+			path) repo_path=${value} ;;
+			*) ;;
+		esac
+	done <<< "${repo_parameters}"
+	if [[ -z ${repo_name} || ! -d ${repo_root} || -z ${repo_path} ]]; then
+		error 'Unable to determine local repository parameters'
+		return 1
+	fi
+	# Canonical paths let callers compare a package's location with repo_root.
+	repo_root=$(realpath -- "${repo_root}") || return 1
+	repo_path=$(realpath -m -- "${repo_path}") || return 1
+	if [[ ${repo_path%/*} != "${repo_root}" ]]; then
+		error "Repository database is not in ${repo_root}: ${repo_path}"
+		return 1
+	fi
+}
+
+_pkg_sign_file() {
+	command gpg --detach-sign --no-armor --batch --yes -u "${GPGKEY}" -- "$1"
+}
+
+# Keep a valid existing signature, whatever its date or signer; sign otherwise.
+_pkg_ensure_signature() {
+	if [[ -f $1.sig ]] && command gpg --verify -- "$1.sig" "$1" >/dev/null 2>&1; then
+		return 0
+	fi
+	_pkg_sign_file "$1"
+}
+
+# True for a package or database archive name, ending in .tar or a
+# compressed .tar; excludes .sig, .old, .part and backup files.
+_pkg_is_archive() {
+	[[ $1 =~ \.tar(\.(gz|bz2|xz|zst|lz|lz4|lrz|lzo|Z))?$ ]]
+}
+
+# Print the package archives in repo_root, NUL-separated. find rather than a
+# glob, so an empty repository works with failglob and nomatch.
+_pkg_archives() {
+	local file
+	while IFS= read -r -d '' file; do
+		if _pkg_is_archive "${file}"; then
+			printf '%s\0' "${file}"
+		fi
+	done < <(find "${repo_root}" -maxdepth 1 -type f -name '*.pkg.tar*' -print0)
+}
+
+_pkg_aur_sync() {
+	_pkg_require aur || return 1
 	command aur sync --noview --chroot --sign --remove "$@"
 }
 
-update() {
-	local updates exit_code
+_pkg_update() {
+	local updates exit_code=0
 	if [[ ${1:-} == aur ]]; then
-		aursync -u || return 1
+		_pkg_aur_sync -u || return 1
 	fi
-	_pkg_require checkupdates || return 2
-	ask 'Checking for updates...'
-	if updates=$(command checkupdates); then
-		exit_code=0
-	else
-		exit_code=$?
-	fi
+	_pkg_require checkupdates || return 1
+	progress 'Checking for updates...'
+	updates=$(command checkupdates) || exit_code=$?
 	plain 'Done'
-	# checkupdates returns 2 when no updates are available.
-	if (( exit_code == 2 )); then
+	# checkupdates exits 2 when no updates are available.
+	if (( exit_code == 2 )) || [[ ${exit_code} -eq 0 && -z ${updates} ]]; then
 		msg 'No updates available'
 		return 0
-	elif (( exit_code != 0 )); then
+	fi
+	if (( exit_code != 0 )); then
 		error 'Unable to check for updates'
 		return 1
 	fi
-	if [[ -z $updates ]]; then
-		msg 'No updates available'
-		return 0
-	fi
-	if printf '%s\n' "$updates" | command grep -q '^archlinux-keyring '; then
+	# Install a new keyring first so the rest of the upgrade verifies against it.
+	if command grep -q '^archlinux-keyring ' <<< "${updates}"; then
 		msg 'Updating keyring'
-		command sudo pacman -Sy archlinux-keyring || return 1
+		command sudo pacman -Sy --needed archlinux-keyring || return 1
+		command sudo pacman -Su
+		return
 	fi
 	command sudo pacman -Syu
 }
 
-# Callers declare these three locals; Bash and zsh both use dynamic scoping.
-_pkg_get_params() {
-	local repo_parameters
-	_pkg_require aur || return 1
-	repo_parameters=$(command aur repo) || return 1
-	repo_name=$(printf '%s\n' "$repo_parameters" | sed -n 's/^repo://p')
-	repo_root=$(printf '%s\n' "$repo_parameters" | sed -n 's/^root://p')
-	repo_path=$(printf '%s\n' "$repo_parameters" | sed -n 's/^path://p')
-	if [[ -z $repo_name || ! -d $repo_root || -z $repo_path ]]; then
-		error 'Unable to determine local repository parameters'
-		return 1
-	fi
-}
-
-_pkg_require_key() {
-	[[ -n ${GPGKEY:-} ]] && return 0
-	error 'GPGKEY environment variable is not set'
-	return 1
-}
-
-_pkg_sign_file() {
-	command gpg --detach-sign --no-armor --batch --yes -u "$GPGKEY" -- "$1"
-}
-
-pkgadd() {
-	local repo_name repo_root repo_path package package_directory package_path
-	if ! (( $# > 0 )); then
+_pkg_add() {
+	local repo_name repo_root repo_path package source destination i
+	local -a sources=() destinations=()
+	local -A source_of=()
+	if (( $# == 0 )); then
 		error 'Usage: packages add package-file ...'
-		return 1
+		return 2
 	fi
 	_pkg_require_key || return 1
-	_pkg_get_params || return 2
+	_pkg_require gpg repo-add cmp || return 1
+	_pkg_get_params || return 1
+	# Validate every file before changing anything. A different file already in
+	# the repository under the same name is never overwritten.
 	for package in "$@"; do
-		if [[ ! -f $package ]]; then
+		if [[ ! -f ${package} ]]; then
 			error "Package does not exist: ${package}"
 			return 1
 		fi
-		if [[ ! -f ${package}.sig ]]; then
-			_pkg_sign_file "$package" || return 3
+		source=$(realpath -- "${package}") || return 1
+		destination=${repo_root}/${source##*/}
+		if [[ -e ${destination} ]] && ! command cmp -s -- "${source}" "${destination}"; then
+			error "Refusing to replace a different file: ${destination}"
+			return 1
 		fi
-		package_path=$(realpath -- "$package") || return 1
-		package_directory=$(dirname -- "$package_path") || return 1
-		if [[ $package_directory != "$repo_root" ]]; then
-			command cp -i -- "$package" "${package}.sig" "$repo_root" || return 1
+		# Two different arguments would otherwise compete for one repository name.
+		if [[ -n ${source_of[${destination}]:-} ]]; then
+			if ! command cmp -s -- "${source_of[${destination}]}" "${source}"; then
+				error "Different files share the name ${source##*/}: ${source_of[${destination}]} and ${source}"
+				return 1
+			fi
+			continue
+		fi
+		source_of[${destination}]=${source}
+		sources+=("${source}")
+		destinations+=("${destination}")
+	done
+	for i in "${!sources[@]}"; do
+		source=${sources[i]}
+		destination=${destinations[i]}
+		_pkg_ensure_signature "${source}" || return 1
+		[[ ${source} != "${destination}" ]] || continue
+		if [[ ! -e ${destination} ]]; then
+			command cp -- "${source}" "${destination}" || return 1
+		fi
+		# Replace the repository's signature only if it does not verify.
+		if ! command gpg --verify -- "${destination}.sig" "${destination}" >/dev/null 2>&1; then
+			command cp --remove-destination -- "${source}.sig" "${destination}.sig" || return 1
 		fi
 	done
-	command repo-add --sign --key "$GPGKEY" "$repo_path" "$@"
+	# Pass the repository copies, so repo-add records the files pacman serves.
+	command repo-add --sign --key "${GPGKEY}" "${repo_path}" "${destinations[@]}"
 }
 
-pkgdel() {
+_pkg_remove() {
 	local repo_name repo_root repo_path
 	if (( $# == 0 )); then
 		error 'Usage: packages remove package-name ...'
-		return 1
+		return 2
 	fi
 	_pkg_require_key || return 1
 	_pkg_require repo-remove || return 1
 	_pkg_get_params || return 1
-	command repo-remove --sign --key "$GPGKEY" --remove "$repo_path" "$@"
+	command repo-remove --sign --key "${GPGKEY}" --remove "${repo_path}" "$@"
 }
 
-pkgverify() {
+_pkg_verify() {
 	local repo_name repo_root repo_path package package_name
 	local -a not_installed=()
 	_pkg_get_params || return 1
 	msg 'Comparing local package files to installed packages...'
 	while IFS= read -r -d '' package; do
-		package_name=$(command pacman -Qpq -- "$package") || return 1
-		[[ $package_name == *-debug ]] && continue
-		if ! command pacman -Qq -- "$package_name" >/dev/null 2>&1; then
-			not_installed+=("$package_name")
+		package_name=$(command pacman -Qpq -- "${package}") || return 1
+		[[ ${package_name} == *-debug ]] && continue
+		if ! command pacman -Qq -- "${package_name}" >/dev/null 2>&1; then
+			not_installed+=("${package_name}")
 		fi
-	done < <(find "$repo_root" -maxdepth 1 -type f -name '*.pkg.tar.*' ! -name '*.sig' -print0)
+	done < <(_pkg_archives)
 	if (( ${#not_installed[@]} > 0 )); then
 		msg 'The following package files are not installed:'
-		for package_name in "${not_installed[@]}"; do msg2 "$package_name"; done
+		for package_name in "${not_installed[@]}"; do msg2 "${package_name}"; done
 		return 1
 	fi
-	msg2 'No superfluous packages exist in the local repository'
+	msg 'No superfluous packages exist in the local repository'
 }
 
-# Enumerate files with find so empty globs work with failglob and nomatch.
+# repo-add creates repo.db and repo.files as symlinks to the archives
+# (repo.db.tar.zst, ...) and makes repo.db.sig a symlink to the archive's
+# signature. Sign each archive once, then point the symlink's .sig at it.
 _pkg_sign_databases() {
-	local database exit_code=0 found=0
+	local database suffix canonical exit_code=0
+	local -A signed=()
+	_pkg_require ln || return 1
 	while IFS= read -r -d '' database; do
-		found=1
-		_pkg_sign_file "$database" || exit_code=3
-	done < <(find -L "$repo_root" -maxdepth 1 -type f \
+		suffix=${database##*/}
+		suffix=${suffix#"${repo_name}."}
+		# Skip leftovers such as repo.db.tar.zst.old.
+		[[ ${suffix} == db || ${suffix} == files ]] || _pkg_is_archive "${suffix}" || continue
+		canonical=$(realpath -- "${database}") || return 1
+		if [[ -z ${signed[${canonical}]:-} ]]; then
+			signed[${canonical}]=failed
+			if _pkg_sign_file "${canonical}"; then
+				signed[${canonical}]=signed
+			fi
+		fi
+		if [[ ${signed[${canonical}]} != signed ]]; then
+			exit_code=1
+			continue
+		fi
+		[[ ${database} != "${canonical}" ]] || continue
+		if ! command ln -sfnT -- "${canonical##*/}.sig" "${database}.sig"; then
+			error "Unable to update signature link: ${database}.sig"
+			exit_code=1
+		fi
+	done < <(find "${repo_root}" -maxdepth 1 \( -type f -o -type l \) \
 		\( -name "${repo_name}.db*" -o -name "${repo_name}.files*" \) ! -name '*.sig' -print0)
-	if (( found == 0 )); then
+	if (( ${#signed[@]} == 0 )); then
 		error 'No database files found'
-		return 2
+		return 1
 	fi
-	return "$exit_code"
+	return "${exit_code}"
 }
 
-localdbsign() {
+_pkg_sign_db() {
 	local repo_name repo_root repo_path
 	_pkg_require_key || return 1
-	_pkg_get_params || return 2
+	_pkg_get_params || return 1
 	msg 'Signing all database files...'
 	_pkg_sign_databases
 }
 
-fixlocaldb() {
+_pkg_sign_all() {
 	local repo_name repo_root repo_path package exit_code=0
 	_pkg_require_key || return 1
-	_pkg_get_params || return 2
+	_pkg_get_params || return 1
 	msg 'Signing all package files...'
 	while IFS= read -r -d '' package; do
-		_pkg_sign_file "$package" || exit_code=4
-	done < <(find "$repo_root" -maxdepth 1 -type f -name '*.pkg.tar.*' ! -name '*.sig' -print0)
-	(( exit_code == 0 )) || return "$exit_code"
+		_pkg_sign_file "${package}" || exit_code=1
+	done < <(_pkg_archives)
+	(( exit_code == 0 )) || return "${exit_code}"
 	msg 'Signing all database files...'
 	_pkg_sign_databases
+}
+
+_pkg_no_arguments() {
+	local action=$1
+	shift
+	if (( $# != 0 )); then
+		error "Unexpected arguments for ${action}"
+		return 2
+	fi
 }
 
 usage() {
@@ -188,7 +289,8 @@ Usage: packages COMMAND [ARGUMENTS]
 Commands:
   update [aur]         Update official packages; optionally update AUR first
   aur [OPTIONS]        Run aur sync with the existing trusted-build defaults
-  add FILE...          Sign and add package files to the local repository
+  add FILE...          Sign and copy package files into the local repository
+                       and add them to its database
   remove NAME...       Remove packages and their files; sign the database
   verify               Report repository packages not installed locally
   sign-db              Replace database signatures
@@ -206,35 +308,31 @@ Examples:
 
 Repository parameters come from `aur repo`; signing uses GPGKEY.
 The aur command preserves --noview --chroot --sign --remove.
+add keeps valid existing signatures and refuses to replace a different file
+of the same name. Its steps are not atomic: a later failure leaves earlier
+copies and signatures in place.
+Exit status: 0 on success, 1 on failure, 2 on a usage error.
 HELP
 }
 
 main() {
 	local action=${1:-help}
 	(( $# == 0 )) || shift
-	case $action in
+	case ${action} in
 		help|-h|--help) usage ;;
 		update)
 			if (( $# > 1 )) || [[ ${1:-aur} != aur ]]; then
 				error 'Usage: packages update [aur]'
 				return 2
 			fi
-			update "$@"
+			_pkg_update "$@"
 			;;
-		aur) aursync "$@" ;;
-		add) pkgadd "$@" ;;
-		remove) pkgdel "$@" ;;
-		verify|sign-db|sign-all)
-			if (( $# != 0 )); then
-				error "Unexpected arguments for ${action}"
-				return 2
-			fi
-			case $action in
-				verify) pkgverify ;;
-				sign-db) localdbsign ;;
-				sign-all) fixlocaldb ;;
-			esac
-			;;
+		aur) _pkg_aur_sync "$@" ;;
+		add) _pkg_add "$@" ;;
+		remove) _pkg_remove "$@" ;;
+		verify) _pkg_no_arguments "${action}" "$@" && _pkg_verify ;;
+		sign-db) _pkg_no_arguments "${action}" "$@" && _pkg_sign_db ;;
+		sign-all) _pkg_no_arguments "${action}" "$@" && _pkg_sign_all ;;
 		*) error "Unknown command: ${action}"; usage >&2; return 2 ;;
 	esac
 }

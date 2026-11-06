@@ -9,7 +9,7 @@ super + alt + l
 	loginctl lock-session
 # Take a screenshot
 @Print
-	scrot "$HOME/Downloads/Screenshot-$(date +%+4Y%m%d%H%M%S).png"
+	scrot "${HOME}/Downloads/Screenshot-$(date +%+4Y%m%d%H%M%S).png"
 
 # -- Applications
 # Open Alacritty
@@ -21,7 +21,7 @@ super + ctrl + Return
 # Open emacs
 #super + alt + Return
 #	/usr/bin/emacs
-# Open Vivladi
+# Open Vivaldi
 super + alt + Return
 	/usr/bin/vivaldi
 
@@ -58,12 +58,12 @@ super + shift + Escape; s
 super + shift + Escape; p
 	xrdb ~/.config/X11/Xresources && polybar-msg cmd restart; \
 	notify-send 'polybar' 'Bar reloaded'
-# Change to a random background wallpaper
+# Change to a random background wallpaper, and match the lock screen to it
 super + shift + Escape; w
-	feh --no-fehbg --bg-fill --randomize ${WALLPAPER_DIR}
+	set-wallpaper
 # Reload keyboard layout
 super + shift + Escape; k
-	notify-send "$(setxkbmap -option 'ctrl:swapcaps')"
+	setxkbmap -option 'ctrl:swapcaps' && notify-send 'Keyboard' 'Layout reloaded'
 
 # -- Layout
 # Toggle monocle mode
@@ -120,11 +120,11 @@ super + {Left,Down,Up,Right}
 
 # -- Desktop
 # Switch to specified desktop
-super + {1-9,0}
-	bspc desktop -f '^{1-9,10}'
+super + {1-9}
+	bspc desktop -f '^{1-9}'
 # Send to specified desktop
-super + shift + {1-9,0}
-	bspc node -d '^{1-9,10}'
+super + shift + {1-9}
+	bspc node -d '^{1-9}'
 # Focus next or previous desktop on current monitor
 super + {_,shift} + Tab
 	bspc desktop -f {next,prev}.local

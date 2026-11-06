@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Decorative SSH launcher; SSH configuration handles agent terminal refresh.
-error() {
-	printf 'ERROR: %s\n' "$*" >&2
-}
+# Wrapper around ssh that plays a short Bifröst animation before connecting.
+# Usage: bifrost [ssh-options] destination [command] | bifrost help
+# Requires: ssh, tput
+# All arguments and the exit status pass through to and from ssh.
 usage() {
 	cat <<'HELP'
 Usage: bifrost [ssh-options] destination [command]
@@ -13,13 +13,21 @@ Examples:
   bifrost -p 2222 user@server
   bifrost server uptime
 
-Uses SSH_CONFIG when defined and otherwise SSH's normal configuration.
+Uses SSH_CONFIG when it names a readable file, otherwise SSH's normal configuration.
 Animation is shown only on a terminal. SSH arguments and exit status pass through.
 Use `bifrost -- help` to connect to a host literally named help.
 HELP
 }
+
+# Runs in a subshell so its traps always restore the cursor and colours.
 _bifrost_animate() (
-	local color i
+	local color i palette_size
+	local -a colors=(1 214 3 2 4 6 5)
+	local glyphs_per_color=4
+	# Skip the animation without colour support; use yellow for orange on 8 colours.
+	palette_size=$(tput colors 2>/dev/null) || return 0
+	[[ ${palette_size} =~ ^[0-9]+$ ]] && (( palette_size >= 8 )) || return 0
+	(( palette_size >= 256 )) || colors[1]=3
 	trap 'tput sgr0; tput cnorm' EXIT
 	trap 'exit 130' INT
 	trap 'exit 143' TERM
@@ -31,15 +39,15 @@ _bifrost_animate() (
 	sleep 0.7
 	tput rc
 	tput el
-	for color in 1 214 3 2 4 6 5; do
-		tput setaf "$color"
-		for (( i = 0; i < 4; i++ )); do
+	for color in "${colors[@]}"; do
+		tput setaf "${color}"
+		for (( i = 0; i < glyphs_per_color; i++ )); do
 			printf '%s' '≡'
 			sleep 0.03
 		done
 	done
 	sleep 0.7
-	for (( i = 28; i > 0; i-- )); do
+	for (( i = ${#colors[@]} * glyphs_per_color; i > 0; i-- )); do
 		tput cub 1
 		tput el
 		sleep 0.01
@@ -47,21 +55,21 @@ _bifrost_animate() (
 )
 
 bifrost() {
-	if (( $# < 1 )); then
-		error 'Usage: bifrost [ssh-options] destination [command]'
-		return 1
-	fi
+	local -a ssh_options=()
 	if [[ -t 1 && ${TERM:-dumb} != dumb ]]; then
 		_bifrost_animate || return $?
 	fi
-	if [[ -n ${SSH_CONFIG:-} ]]; then
-		command ssh -F "$SSH_CONFIG" "$@"
-	else
-		command ssh "$@"
+	# ssh -F exits 255 for a missing file, so fall back to ssh's own configuration.
+	if [[ -n ${SSH_CONFIG:-} && -r ${SSH_CONFIG} ]]; then
+		ssh_options=(-F "${SSH_CONFIG}")
 	fi
+	exec ssh "${ssh_options[@]}" "$@"
 }
 
-case ${1:-help} in
-	help|--help) usage ;;
-	*) bifrost "$@" ;;
-esac
+main() {
+	case ${1:-help} in
+		help|--help) usage ;;
+		*) bifrost "$@" ;;
+	esac
+}
+main "$@"

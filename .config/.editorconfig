@@ -18,14 +18,9 @@ indent_size = 4
 indent_style = space
 indent_size = 2
 
-[MANIFEST.json]
-indent_style = space
-indent_size = 2
-
-# Preserve the formatting of copied third-party source assets.
-[vim/colors/nord.vim]
-indent_style = space
-indent_size = 2
+# Compiled Vim spell files are binary; never append a newline.
+[vim/spell/*.{spl,sug}]
+insert_final_newline = false
 
 [cava/shaders/*]
 indent_style = space

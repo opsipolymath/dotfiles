@@ -5,8 +5,8 @@ bind index,pager <Up>    sidebar-prev
 bind index,pager <Down>  sidebar-next
 
 # Moving around
-bind index                      G   imap-fetch-mail
 bind attach,browser,index       g   noop
+bind index                      gf  imap-fetch-mail
 bind attach,browser,index       gg  first-entry
 bind attach,browser,index       G   last-entry
 bind pager                      g   noop
@@ -28,7 +28,7 @@ bind pager,index                d   noop
 bind pager,index                dd  delete-message
 
 # Mail & Reply
-bind index                      \Cm list-reply # Doesn't work currently
+# list-reply is L by default; \Cm (CTRL-M) would capture Enter, which opens messages.
 
 # Threads
 bind browser,pager,index        N   search-opposite

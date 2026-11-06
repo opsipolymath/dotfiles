@@ -1,5 +1,17 @@
 #!/bin/sh
 
-# Defaults xserverrc
+# X server startup. Keep an explicitly requested VT; otherwise use the login VT.
+
+for argument do
+	case ${argument} in
+		vt[0-9]*) exec /usr/bin/X -nolisten tcp "$@" ;;
+		*) ;;
+	esac
+done
+
+case ${XDG_VTNR:-} in
+	''|*[!0-9]*) ;;
+	*) set -- "$@" "vt${XDG_VTNR}" ;;
+esac
 
 exec /usr/bin/X -nolisten tcp "$@"

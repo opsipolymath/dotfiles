@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+# Lock the screen with i3lock, showing the blurred, dimmed wallpaper.
+# Called by: xss-lock (bspwmrc), on loginctl lock-session, idle and suspend
+# Requires: i3lock or i3lock-color; optionally dunstctl
+#
+# set-wallpaper renders the lock image. Without one, the screen is solid Nord.
+# i3lock-color adds a Nord indicator and clock; plain i3lock rejects those
+# options, and a locker that fails to start leaves the screen unlocked, so
+# they are used only with i3lock-color.
+#
+# With xss-lock --transfer-sleep-lock, a suspend waits until the inherited
+# sleep-lock descriptor is closed. i3lock in fork mode returns only once the
+# screen is locked, so the descriptor is closed after that. Based on
+# /usr/share/doc/xss-lock/transfer-sleep-lock-i3lock.sh.
+
+lock_image=${XDG_CACHE_HOME:-${HOME}/.cache}/lock-screen/lock.png
+
+if ! command -v i3lock >/dev/null 2>&1; then
+	printf 'ERROR: Required command is not installed: i3lock\n' >&2
+	exit 1
+fi
+
+# Options both versions accept: count failed attempts, ignore an empty Enter.
+i3lock_options=(--show-failed-attempts --ignore-empty-password)
+if [[ -r ${lock_image} ]]; then
+	i3lock_options+=(--image="${lock_image}")
+fi
+
+# i3lock-color reports versions such as 2.13.c.5, and takes rrggbbaa colours.
+if [[ $(i3lock --version 2>&1) == *.c.* ]]; then
+	font='JetBrains Mono Nerd Font'
+	i3lock_options+=(
+		--color=2e3440ff
+		--indicator --clock --time-str=%H:%M --date-str=
+		--time-font="${font}" --verif-font="${font}" --wrong-font="${font}"
+		--inside-color=2e344099 --ring-color=88c0d0ff --separator-color=00000000
+		--insidever-color=2e344099 --ringver-color=a3be8cff
+		--insidewrong-color=2e344099 --ringwrong-color=bf616aff
+		--keyhl-color=81a1c1ff --bshl-color=bf616aff --line-uses-inside
+		--time-color=eceff4ff --verif-color=a3be8cff --wrong-color=bf616aff
+	)
+else
+	i3lock_options+=(--color=2e3440)
+fi
+
+# Hide notifications while locked: they would otherwise draw over i3lock.
+# Notifications already paused before locking stay paused after unlocking.
+notifications_were_paused=true
+pause_notifications() {
+	command -v dunstctl >/dev/null 2>&1 || return 0
+	notifications_were_paused=$(dunstctl is-paused 2>/dev/null) || notifications_were_paused=true
+	dunstctl set-paused true
+}
+resume_notifications() {
+	if [[ ${notifications_were_paused} == false ]]; then
+		dunstctl set-paused false
+	fi
+}
+
+pause_notifications
+trap 'pkill -xu "${EUID}" i3lock' TERM INT
+
+if [[ -e /dev/fd/${XSS_SLEEP_LOCK_FD:--1} ]]; then
+	# Locking for a suspend: i3lock forks once the screen is locked, without a
+	# copy of the descriptor; closing ours then lets the system sleep.
+	i3lock "${i3lock_options[@]}" {XSS_SLEEP_LOCK_FD}<&-
+	status=$?
+	exec {XSS_SLEEP_LOCK_FD}<&-
+	if (( status != 0 )); then
+		resume_notifications
+		printf 'ERROR: i3lock failed to lock the screen (status %s)\n' "${status}" >&2
+		exit "${status}"
+	fi
+	while pkill -0 -xu "${EUID}" i3lock; do
+		sleep 0.5
+	done
+	resume_notifications
+	exit 0
+fi
+
+i3lock --nofork "${i3lock_options[@]}" &
+locker_pid=$!
+wait "${locker_pid}"
+status=$?
+resume_notifications
+exit "${status}"

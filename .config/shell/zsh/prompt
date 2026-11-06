@@ -1,6 +1,5 @@
 # Source from Zsh initialization; do not execute as a standalone script.
-
-autoload -Uz add-zsh-hook
+# zshrc autoloads add-zsh-hook before sourcing this file.
 
 # Prompt escapes are native to Zsh and count as zero-width characters.
 typeset -g PROMPT_SPLIT='%F{blue}]─['
@@ -10,7 +9,7 @@ typeset -g PROMPT_YELLOW='%F{yellow}' PROMPT_PERCENT='%%'
 source "${ZDOTDIR}/../prompt"
 
 prompt_ssh_indicator() {
-	[[ -n ${SSH_TTY:-} ]] || return 0
+	shell_is_ssh || return 0
 	print -rn -- ' | %F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}'
 }
 
@@ -18,7 +17,7 @@ prompt_update() {
 	local directory_color user_part end_color host
 
 	directory_color=green
-	[[ -w $PWD ]] || directory_color=red
+	[[ -w ${PWD} ]] || directory_color=red
 
 	if (( EUID == 0 )); then
 		user_part='%F{red}odin%F{green}'
@@ -28,11 +27,11 @@ prompt_update() {
 		end_color=blue
 	fi
 
-	host=$(hostname)
-	host=${host//%/%%}
+	# Render the full hostname with zsh's built-in prompt escape.
+	host='%M'
 
-	PROMPT="%F{blue}┌[%F{${directory_color}}%~$(prompt_git)%F{blue}]%f"$'\n'
-	PROMPT+="%F{blue}└[$(prompt_battery)${user_part}@${host}$(prompt_ssh_indicator)%F{blue}]%f %F{${end_color}}%# %f"
+	PROMPT="%B%F{blue}┌[%F{${directory_color}}%~$(prompt_git)%F{blue}]%f%b"$'\n'
+	PROMPT+="%B%F{blue}└[$(prompt_battery)${user_part}@${host}$(prompt_ssh_indicator)%F{blue}]%f %F{${end_color}}%# %f%b"
 }
 
 # Refresh the display when switching ZLE keymaps; precmd computes prompt data.

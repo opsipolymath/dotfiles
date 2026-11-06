@@ -1,9 +1,9 @@
 # shellcheck shell=bash
 # Small interactive functions that benefit from the current shell environment.
-# Git wrapper for the bare dotfiles repository.
-export DOTFILES="${DOTFILES:-${XDG_CONFIG_HOME:-${HOME}/.config}/dotfiles}"
+
+# Git wrapper for the bare dotfiles repository; DOTFILES is set in shellenv.
 dotfiles() {
-	command git --git-dir="$DOTFILES" --work-tree="$HOME" "$@"
+	command git --git-dir="${DOTFILES:-${XDG_CONFIG_HOME:-${HOME}/.config}/dotfiles}" --work-tree="${HOME}" "$@"
 }
 
 # Refresh the active YubiKey explicitly instead of probing hardware at startup.
@@ -11,16 +11,61 @@ yku() {
 	command gpg-connect-agent 'scd serialno' 'learn --force' /bye
 }
 
-# Reuse any session; avoid nesting when already inside tmux.
+# With no arguments (or just "a"), attach to an existing session or start one;
+# do nothing when already inside tmux. Anything else goes straight to tmux.
 tmux() {
-	if (( $# == 0 )) || { (( $# == 1 )) && [[ $1 == a ]]; }; then
-		[[ -z ${TMUX:-} ]] || return 0
-		if command tmux has-session 2>/dev/null; then
-			command tmux attach-session
-		else
-			command tmux new-session
-		fi
-	else
+	if (( $# > 1 )) || [[ $# -eq 1 && $1 != a ]]; then
 		command tmux "$@"
+		return
 	fi
+	[[ -z ${TMUX:-} ]] || return 0
+	if command tmux has-session 2>/dev/null; then
+		command tmux attach-session
+		return
+	fi
+	command tmux new-session
+}
+
+# Overwrite the previous X startup log in the state directory; preserve arguments.
+startx() {
+	local log_dir="${XDG_STATE_HOME:-${HOME}/.local/state}"
+	command mkdir -p -- "${log_dir}" || return 1
+	/usr/bin/startx "$@" >"${log_dir}/startx.log" 2>&1
+}
+
+# Start Claude in its project directory without changing the caller's directory.
+claude() (
+	local project_dir="${HOME}/Projects/claude"
+	command mkdir -p -- "${project_dir}" || return 1
+	cd -- "${project_dir}" && exec /usr/bin/claude "$@"
+)
+
+# True when this shell runs on the far end of an SSH connection. Either variable
+# counts: tmux refreshes SSH_CONNECTION for new panes on attach, while SSH_TTY
+# survives in panes of a tmux server first started over SSH. Used by the prompts
+# and shell_shutdown, so a false positive only costs an extra warning.
+shell_is_ssh() {
+	[[ -n ${SSH_CONNECTION:-}${SSH_TTY:-} ]]
+}
+
+# Confirm remote shutdowns; preserve arguments and command exit status.
+shell_shutdown() {
+	local action=$1
+	shift
+	if ! shell_is_ssh; then
+		"/usr/bin/${action}" "$@"
+		return $?
+	fi
+	warning 'Connected via SSH'
+	if ! shell_confirm "Really ${action}? "; then
+		msg2 'Cancelling'
+		return 0
+	fi
+	command sudo "/usr/bin/${action}" "$@"
+}
+poweroff() {
+	shell_shutdown poweroff "$@"
+}
+reboot() {
+	shell_shutdown reboot "$@"
 }

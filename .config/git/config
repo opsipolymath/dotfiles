@@ -3,27 +3,28 @@
 [user]
 	email = opsipolymath+github@gmail.com
 	name = opsipolymath
-	signingkey = 0F56827E
+	# Full fingerprint; 8-digit short key IDs can collide.
+	signingkey = 79F5D3BE4A6C3803C33E8B82CD8387C70F56827E
 
 [commit]
 	gpgsign = true
 	template = ~/.config/git/commit-msg
 
 [init]
-	defaultBranch = master
+	defaultBranch = main
 
 [pull]
-	rebase = false
+	rebase = true
 
+# vimdiff is built into git; no custom difftool command is needed.
 [diff]
-	tool = nvimdiff
+	tool = vimdiff
 
 [difftool]
 	prompt = false
 
-[difftool "nvimdiff"]
-	cmd = "nvim -d \"$LOCAL\" \"$REMOTE\""
-
 [alias]
 	d = difftool
+	# During a rebase "ours" is the branch being rebased onto (master), so
+	# -Xours resolves conflicts in favour of master, not the current branch.
 	rbm = rebase -Xours master
