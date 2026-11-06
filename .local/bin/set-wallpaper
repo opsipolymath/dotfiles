@@ -3,12 +3,15 @@
 # Usage: set-wallpaper [DIRECTORY]
 # Called by: bspwmrc at startup; sxhkd (super + shift + Escape; w)
 # Requires: feh, xsetroot (xorg-xsetroot), magick (imagemagick), xrandr,
-#           flock (util-linux); optionally xdg-user-dir
+#           flock (util-linux); optionally xdg-user-dir, notify-send (libnotify)
 #
 # Images come from DIRECTORY, else WALLPAPER_DIR, else Wallpapers in the XDG
-# pictures directory (normally ~/Pictures/Wallpapers). With no images there,
-# the packaged default is used (WALLPAPER_DEFAULT overrides its path), and
-# without that, a solid Nord background. lock-screen shows the rendered image.
+# pictures directory (normally ~/Pictures/Wallpapers). An image there named
+# static (.jpg, .jpeg or .png; a copy or a link) is always used instead of a
+# random one; the folder is not tracked, so each host can have its own. With
+# no images there, the packaged default is used (WALLPAPER_DEFAULT overrides its
+# path), and without that, a solid Nord background. lock-screen shows the
+# rendered image.
 # Exit status: 0 when an image is set, 1 when the solid background is used
 # instead, and 2 when even that fails.
 shopt -s nullglob
@@ -48,12 +51,48 @@ fallback() {
 	exit "${status}"
 }
 
+# Warn on stderr and as a notification: set-wallpaper usually runs from bspwm
+# or sxhkd, where nobody sees stderr.
+warn() {
+	printf 'WARNING: %s\n' "$1" >&2
+	if command -v notify-send >/dev/null 2>&1; then
+		notify-send --app-name=set-wallpaper 'Wallpaper' "$1" >/dev/null 2>&1
+	fi
+}
+
 pictures_dir=$(xdg-user-dir PICTURES 2>/dev/null) || pictures_dir=''
 wallpaper_dir=${1:-${WALLPAPER_DIR:-${pictures_dir:-${HOME}/Pictures}/Wallpapers}}
 
 images=()
 if [[ -d ${wallpaper_dir} ]]; then
 	images=("${wallpaper_dir}"/*.{jpg,jpeg,png,JPG,JPEG,PNG})
+fi
+
+# Use the first readable static image, in alphabetical order; one that can't be
+# read, such as a broken link, is skipped. Without one, choose from the others.
+static_images=()
+random_images=()
+for file in "${images[@]}"; do
+	case ${file##*/} in
+		static.*) static_images+=("${file}") ;;
+		*) random_images+=("${file}") ;;
+	esac
+done
+static_image=''
+for file in "${static_images[@]}"; do
+	if [[ -r ${file} ]]; then
+		static_image=${file}
+		break
+	fi
+	warn "Ignoring ${file}, which can't be read"
+done
+if [[ -n ${static_image} ]]; then
+	if (( ${#static_images[@]} > 1 )); then
+		warn "More than one static image in ${wallpaper_dir}; using ${static_image##*/}"
+	fi
+	images=("${static_image}")
+else
+	images=("${random_images[@]}")
 fi
 
 # Hold publish_lock from here until the wallpaper is recorded. Without a cache

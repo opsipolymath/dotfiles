@@ -3,7 +3,8 @@
 # Called by: xss-lock (bspwmrc), on loginctl lock-session, idle and suspend
 # Requires: i3lock or i3lock-color; optionally dunstctl
 #
-# set-wallpaper renders the lock image. Without one, the screen is solid Nord.
+# set-wallpaper renders the lock image. Without one, the background is Nord
+# blue (#5e81ac).
 # i3lock-color adds a Nord indicator and clock; plain i3lock rejects those
 # options, and a locker that fails to start leaves the screen unlocked, so
 # they are used only with i3lock-color.
@@ -20,27 +21,34 @@ if ! command -v i3lock >/dev/null 2>&1; then
 	exit 1
 fi
 
-# Options both versions accept: count failed attempts, ignore an empty Enter.
-i3lock_options=(--show-failed-attempts --ignore-empty-password)
+# Options both versions accept: ignore an empty Enter.
+i3lock_options=(--ignore-empty-password)
 if [[ -r ${lock_image} ]]; then
 	i3lock_options+=(--image="${lock_image}")
 fi
 
 # i3lock-color reports versions such as 2.13.c.5, and takes rrggbbaa colours.
+# Keypresses are dark grey, verifying green and failures red; plain i3lock's
+# indicator colours are fixed, so only its background can follow. The status
+# texts are blank, so only the colours show; --force-clock keeps the clock up
+# meanwhile. A failure to lock still says so, and Caps Lock is still shown.
 if [[ $(i3lock --version 2>&1) == *.c.* ]]; then
 	font='JetBrains Mono Nerd Font'
 	i3lock_options+=(
-		--color=2e3440ff
-		--indicator --clock --time-str=%H:%M --date-str=
-		--time-font="${font}" --verif-font="${font}" --wrong-font="${font}"
+		--color=5e81acff
+		--indicator --force-clock --time-str=%H:%M --date-str='%d %b %Y'
+		--time-font="${font}" --date-font="${font}"
+		--verif-font="${font}" --wrong-font="${font}"
 		--inside-color=2e344099 --ring-color=88c0d0ff --separator-color=00000000
 		--insidever-color=2e344099 --ringver-color=a3be8cff
 		--insidewrong-color=2e344099 --ringwrong-color=bf616aff
-		--keyhl-color=81a1c1ff --bshl-color=bf616aff --line-uses-inside
-		--time-color=eceff4ff --verif-color=a3be8cff --wrong-color=bf616aff
+		--keyhl-color=2e3440ff --bshl-color=bf616aff --line-uses-inside
+		--time-color=eceff4ff --date-color=eceff4ff
+		--verif-color=a3be8cff --wrong-color=bf616aff
+		--verif-text= --wrong-text= --noinput-text= --lock-text=
 	)
 else
-	i3lock_options+=(--color=2e3440)
+	i3lock_options+=(--color=5e81ac --show-failed-attempts)
 fi
 
 # Hide notifications while locked: they would otherwise draw over i3lock.
