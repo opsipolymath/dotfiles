@@ -1,0 +1,12 @@
+[Unit]
+Description=Handle the volume, mute and brightness keys
+ConditionPathExists=/usr/bin/acpi_listen
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/acpi-keys
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
