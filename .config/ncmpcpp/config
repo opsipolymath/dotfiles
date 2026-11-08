@@ -3,7 +3,7 @@
 # Directories
 ncmpcpp_directory = ~/.config/ncmpcpp
 lyrics_directory = ~/Music/lyrics
-mpd_music_dir = ~/Music/Albums
+mpd_music_dir = ~/Music/Library
 
 # Connection settings
 mpd_host = localhost
