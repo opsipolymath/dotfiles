@@ -84,6 +84,7 @@
 
 # Ignore specific files in tracked directories
 .config/cava/shaders/
+.config/cava/themes/
 .config/ncmpcpp/error.log
 .config/tmux/plugins/
 .config/vim/.netrwhist
