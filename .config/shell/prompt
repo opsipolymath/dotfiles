@@ -57,14 +57,17 @@ prompt_battery() {
 	[[ ${capacity} =~ ^[0-9]+$ ]] || return 0
 
 	capacity=$((10#${capacity}))
+	(( capacity >= 95 )) && capacity=100
 	if (( capacity >= 100 )); then
 		color=${PROMPT_GREEN}
-	elif (( capacity < 10 )); then
+	elif (( capacity < 20 )); then
 		color=${PROMPT_RED}
-	elif [[ ${battery_status} == Charging ]]; then
+	elif (( capacity < 50 )) && [[ ${battery_status} == Discharging ]]; then
+		color=${PROMPT_RED}
+	elif (( capacity < 50 )) || [[ ${battery_status} == Discharging ]]; then
 		color=${PROMPT_YELLOW}
 	else
-		color=${PROMPT_RED}
+		color=${PROMPT_GREEN}
 	fi
 
 	printf '%s%s%s%s' "${color}" "${capacity}" "${PROMPT_PERCENT}" "${PROMPT_SPLIT}"
