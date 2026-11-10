@@ -183,8 +183,9 @@ super + alt + Left
 	mpc prev
 
 # -- Media Keys
-# The volume, mute, mic mute and brightness keys are handled by acpi-keys
-# (acpi-keys.service), so they work on the console too.
+# The volume, mute and mic mute keys are handled by acpi-keys
+# (acpi-keys.service), and the brightness keys by acpid itself, so they all
+# work on the console too.
 # Playing Spotify takes priority over MPD; resume paused Spotify when MPD is idle.
 # Stop playing
 XF86AudioStop

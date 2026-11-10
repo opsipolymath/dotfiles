@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Handle the volume, mute, mic mute and brightness keys, on the console and in X.
+# Handle the volume, mute and mic mute keys, on the console and in X.
 # Called by: acpi-keys.service (systemd user unit)
-# Requires: acpi_listen and a running acpid.service (acpid), pamixer,
-#           brightnessctl
+# Requires: acpi_listen and a running acpid.service (acpid), pamixer
 #
 # acpid reads these keys from the kernel's input devices and shares them as
-# events on its socket. Running the commands here, as the user, lets the volume
-# keys reach the user's PipeWire session; brightnessctl goes through logind.
-# sxhkd doesn't bind these keys, or each press would act twice in X.
+# events on its socket. Running the commands here, as the user, lets them reach
+# the user's PipeWire session. The brightness keys need no session, so acpid
+# handles those itself, before login too. sxhkd doesn't bind any of these keys,
+# or each press would act twice in X.
 
 # Each event reads "class/name CODE ...", and only its first field matters.
 acpi_listen | while read -r event _; do

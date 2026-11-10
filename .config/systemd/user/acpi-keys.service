@@ -1,5 +1,5 @@
 [Unit]
-Description=Handle the volume, mute and brightness keys
+Description=Handle the volume and mute keys
 ConditionPathExists=/usr/bin/acpi_listen
 
 [Service]
