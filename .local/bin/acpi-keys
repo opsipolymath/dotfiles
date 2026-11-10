@@ -16,8 +16,6 @@ acpi_listen | while read -r event _; do
 		button/volumedown) pamixer -u -d 5 ;;
 		button/mute) pamixer -t ;;
 		button/micmute) pamixer --default-source -t ;;
-		video/brightnessup) brightnessctl --quiet set 5%+ ;;
-		video/brightnessdown) brightnessctl --quiet set 5%- ;;
 		*) ;;
 	esac
 done
