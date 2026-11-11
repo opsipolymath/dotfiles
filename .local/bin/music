@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ncmpcpp launcher with optional bspwm layout/visualizer integration.
 # Usage: music [run] [NCMPCPP-OPTIONS] | music help
-# Requires: ncmpcpp; optionally bspwm, bsp-layout, alacritty, cava, jq
+# Requires: ncmpcpp; optionally bspwm, bsp-layout, kitty, cava, jq
 usage() {
 	cat <<'HELP'
 Usage: music [run] [NCMPCPP-OPTIONS]
@@ -16,7 +16,7 @@ The run command is optional; any other arguments are passed to ncmpcpp.
 
 Runs ncmpcpp normally outside bspwm, or when an integration command is
 missing. Otherwise switches the desktop to the wide layout, launches cava in
-Alacritty, and restores that desktop's original layout on exit. Only the
+kitty, and restores that desktop's original layout on exit. Only the
 visualizer process launched here is stopped.
 HELP
 }
@@ -51,7 +51,7 @@ run_player() (
 	if [[ -z ${BSPWM_SOCKET:-} ]]; then
 		exec ncmpcpp -q "$@"
 	fi
-	for dependency in bsp-layout bspc setsid alacritty cava jq; do
+	for dependency in bsp-layout bspc setsid kitty cava jq; do
 		if ! command -v "${dependency}" >/dev/null 2>&1; then
 			printf 'Missing %s; running ncmpcpp without the visualizer\n' "${dependency}" >&2
 			exec ncmpcpp -q "$@"
@@ -72,7 +72,7 @@ run_player() (
 	# A background job of a non-interactive shell is not a process group
 	# leader, so setsid execs in place: $! becomes the session ID, which lets
 	# cleanup_player kill the visualizer's whole process group.
-	setsid alacritty -e cava >/dev/null 2>&1 &
+	setsid kitty cava >/dev/null 2>&1 &
 	visualizer_pid=$!
 	sleep "${window_delay}"
 	# Refocus the window that was focused before, unless the user moved away.

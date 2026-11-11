@@ -47,13 +47,20 @@ augroup autoread
 	autocmd FocusGained,BufEnter * silent! checktime
 augroup END
 
-" Vim requests focus reports only from xterm-like terminals. Alacritty and tmux
-" (with focus-events on) send them too, so request them there as well.
-if &term =~# '^\(alacritty\|tmux\)'
+" Vim requests focus reports only from xterm-like terminals, such as kitty's
+" xterm-kitty. tmux (with focus-events on) sends them too, so request them there
+" as well.
+if &term =~# '^tmux'
 	let &t_fe = "\<Esc>[?1004h"
 	let &t_fd = "\<Esc>[?1004l"
 	execute "set <FocusGained>=\<Esc>[I"
 	execute "set <FocusLost>=\<Esc>[O"
+endif
+
+" kitty doesn't support background colour erase, which Vim assumes of xterm-like
+" terminals; without it, colour scheme backgrounds leave gaps when redrawing.
+if &term =~# '^xterm-kitty'
+	let &t_ut = ''
 endif
 
 " Show the file name in the window title

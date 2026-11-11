@@ -12,12 +12,12 @@ super + alt + l
 	scrot "${HOME}/Downloads/Screenshot-$(date +%+4Y%m%d%H%M%S).png"
 
 # -- Applications
-# Open Alacritty
+# Open kitty
 super + shift + Return
-	/usr/bin/alacritty
+	/usr/bin/kitty
 # Open Yazi
 super + ctrl + Return
-	/usr/bin/alacritty -e yazi
+	/usr/bin/kitty yazi
 # Open emacs
 #super + alt + Return
 #	/usr/bin/emacs

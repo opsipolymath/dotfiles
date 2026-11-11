@@ -12,9 +12,6 @@ if [[ -r ${XDG_CONFIG_HOME}/user-dirs.dirs ]]; then
 	# shellcheck source=/dev/null
 	source "${XDG_CONFIG_HOME}/user-dirs.dirs"
 fi
-if [[ -t 1 && ${TERM:-dumb} != dumb ]] && command -v tabs >/dev/null 2>&1; then
-	tabs -4
-fi
 
 # Each shell owns its history format and sets HISTFILE in its own rc file, then
 # calls this. Keep history outside the config tree.

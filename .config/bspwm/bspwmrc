@@ -96,10 +96,10 @@ set_rule "RimWorldLinux" desktop=^3 follow=on state=fullscreen
 bspc config external_rules_command "${bspwm_config_dir}/external_rules"
 
 # Arm one-shot rules only when starting the corresponding application.
-bspc rule -r Alacritty >/dev/null 2>&1
-if ! pgrep -u "${user_id}" -x alacritty >/dev/null 2>&1; then
-	bspc rule -a Alacritty -o desktop=^1 follow=on
-	alacritty &
+bspc rule -r kitty >/dev/null 2>&1
+if ! pgrep -u "${user_id}" -x kitty >/dev/null 2>&1; then
+	bspc rule -a kitty -o desktop=^1 follow=on
+	kitty &
 fi
 if ! pgrep -u "${user_id}" vivaldi >/dev/null 2>&1; then
 	bspc rule -a Vivaldi-stable -o desktop=^2 follow=off focus=off
