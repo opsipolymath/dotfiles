@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Warn about a low battery with desktop notifications.
+# Called by: bspwmrc (start_once battery-notify)
+# Requires: upower, notify-send (libnotify) and a notification daemon (dunst)
+#
+# UPower sets the battery levels (/etc/UPower/UPower.conf.d) and powers off at
+# its action level. This only reports UPower's warning level when it changes,
+# so the levels are configured in one place.
+
+device='/org/freedesktop/UPower/devices/DisplayDevice'
+previous='none'
+
+# Read the percentage and warning level of the combined battery.
+read_battery() {
+	local key value
+	while read -r key value; do
+		case ${key} in
+			percentage:) percentage=${value} ;;
+			warning-level:) level=${value} ;;
+			*) ;;
+		esac
+	done < <(upower -i "${device}")
+}
+
+# Notify once whenever the warning level changes to low, critical or action.
+check_battery() {
+	read_battery
+	if [[ ${level} == "${previous}" ]]; then
+		return
+	fi
+	previous=${level}
+	case ${level} in
+		low) notify-send -u normal -a battery 'Battery low' "${percentage} remaining." ;;
+		critical) notify-send -u critical -a battery 'Battery critical' "${percentage} remaining. Plug in now." ;;
+		action) notify-send -u critical -a battery 'Battery empty' 'Shutting down now.' ;;
+		*) ;;
+	esac
+}
+
+check_battery
+
+# UPower prints a line whenever a device changes.
+upower --monitor | while read -r _; do
+	check_battery
+done
