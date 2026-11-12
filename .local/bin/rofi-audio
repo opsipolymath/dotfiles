@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Audio output menu for rofi: choose which output plays sound.
+# Usage: rofi -show audio -modes 'audio:rofi-audio'
+# Called by: rofi (the launcher's audio mode; launcher.rasi)
+# Requires: pactl (PulseAudio or pipewire-pulse), jq, rofi; optionally
+#           notify-send (libnotify)
+#
+# rofi runs this script again for each choice, with ROFI_INFO set to the chosen
+# row's action. Choosing an output makes it the default and moves everything
+# already playing to it. WirePlumber remembers the choice; whether a newly
+# connected output takes over depends on its policy and on what was chosen
+# before.
+headphones_icon='󰋋'
+headset_icon='󰋎'
+speakers_icon='󰓃'
+television_icon='󰔂'
+refresh_icon=''
+separator='──────────────────────────────'
+
+message=''
+
+# jq definitions for the page: markup matches the Bash function below, and rows
+# prints a list of rows followed by a separator, or nothing for an empty list.
+# shellcheck disable=SC2016 # $separator is a jq variable.
+jq_definitions='def markup: gsub("[[:cntrl:]]"; "") | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+def rows: if length > 0 then .[], "\($separator)\u0000nonselectable\u001ftrue\n" else empty end;
+'
+
+# Escape text for Pango markup, which rofi uses for rows and messages, and drop
+# control characters, which would break rofi's line-based protocol. The
+# backslashes keep Bash 5.2 from expanding & in the replacements.
+markup() {
+	local text=${1//[[:cntrl:]]/}
+	text=${text//&/\&amp;}
+	text=${text//</\&lt;}
+	text=${text//>/\&gt;}
+	printf '%s' "${text}"
+}
+
+notify() {
+	if command -v notify-send >/dev/null 2>&1; then
+		notify-send --app-name=rofi-audio 'Audio' "$1" >/dev/null 2>&1
+	fi
+}
+
+# Mode options, sent before every page's rows.
+header() {
+	printf '\0no-custom\x1ftrue\n\0markup-rows\x1ftrue\n'
+	printf '\0message\x1f%s\n' "${message}"
+}
+
+# Print a row: row TEXT [INFO]. Without INFO, the row can't be chosen.
+row() {
+	if [[ -n ${2:-} ]]; then
+		printf '%s\0info\x1f%s\n' "$1" "$2"
+	else
+		printf '%s\0nonselectable\x1ftrue\n' "$1"
+	fi
+}
+
+# Every output, with an icon for its kind, its volume (the average of its
+# channels) and whether it's muted; the default one is marked active.
+show_main() {
+	local sinks default
+	if ! sinks=$(pactl --format=json list sinks 2>/dev/null) || [[ -z ${sinks} ]]; then
+		message='No audio server is running.'
+		header
+		row "${refresh_icon} Refresh" main
+		return
+	fi
+	default=$(pactl get-default-sink 2>/dev/null) || default=''
+	if [[ -z ${message} && ${sinks} == '[]' ]]; then
+		message='No audio outputs.'
+	fi
+	header
+	jq -j --arg default "${default}" --arg separator "${separator}" "${jq_definitions}"'
+		[.[]
+		| (.properties["device.form_factor"] // "") as $form
+		| (.active_port // "") as $port
+		| (if $form == "headset" then $ARGS.positional[1]
+			elif $form == "headphone" or ($port | test("headphone")) then $ARGS.positional[0]
+			elif ($port | test("hdmi|displayport")) or ($form | test("tv|monitor")) then $ARGS.positional[3]
+			else $ARGS.positional[2] end) as $icon
+		| ([.volume[].value_percent | rtrimstr("%") | tonumber] | if length > 0 then add / length | round else null end) as $volume
+		| "\($icon) <b>\(.description | markup)</b>"
+			+ (if $volume then " \($volume)%" else "" end)
+			+ (if .mute then ", muted" else "" end)
+			+ "\u0000info\u001fsink:\(.name)"
+			+ (if .name == $default then "\u001factive\u001ftrue" else "" end)
+			+ "\n"]
+		| rows
+	' --args "${headphones_icon}" "${headset_icon}" "${speakers_icon}" "${television_icon}" <<<"${sinks}"
+	row "${refresh_icon} Refresh" main
+}
+
+# use_sink NAME: make it the default, move every playing stream to it, and close
+# rofi. A stream that can't move, such as one fixed to its output, is left.
+use_sink() {
+	local description reason stream
+	description=$(pactl --format=json list sinks 2>/dev/null |
+		jq -r --arg name "$1" 'first(.[] | select(.name == $name) | .description) // empty' 2>/dev/null)
+	if [[ -z ${description} ]]; then
+		message='That output is no longer available.'
+		show_main
+		return
+	fi
+	if ! reason=$(pactl set-default-sink "$1" 2>&1); then
+		message="Couldn't switch to $(markup "${description}"): $(markup "${reason}")"
+		show_main
+		return
+	fi
+	while IFS= read -r stream; do
+		pactl move-sink-input "${stream}" "$1" >/dev/null 2>&1
+	done < <(pactl --format=json list sink-inputs 2>/dev/null | jq -r '.[].index' 2>/dev/null)
+	notify "Playing through $(markup "${description}")"
+}
+
+# Act only on a chosen row: rofi also sends the highlighted row's info when an
+# entry is deleted (Shift+Delete).
+action=''
+if [[ ${ROFI_RETV:-0} == 1 ]]; then
+	action=${ROFI_INFO:-}
+fi
+
+case ${action} in
+	sink:*) use_sink "${action#sink:}" ;;
+	*) show_main ;;
+esac

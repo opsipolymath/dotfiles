@@ -1,0 +1,452 @@
+#!/usr/bin/env bash
+# Wi-Fi menu for rofi, using iwd: connect, disconnect, scan, show the active
+# connection, turn Wi-Fi on or off, and forget saved networks.
+# Usage: rofi -show wifi -modes 'wifi:rofi-wifi'
+# Called by: rofi (the launcher's wifi mode; launcher.rasi)
+# Requires: iwd (iwctl), busctl (systemd), jq, rfkill (util-linux), rofi;
+#           optionally ip (iproute2), notify-send (libnotify)
+#
+# rofi runs this script again for each choice, with ROFI_INFO set to the chosen
+# row's action. Network state comes from iwd over D-Bus, which, unlike iwctl's
+# tables, keeps names with spaces intact.
+#
+# rofi's script modes can't hide typed text, so a new network's passphrase is
+# asked for once this menu has closed, with rofi -dmenu -password. iwctl then
+# gets it on its command line, where other local users could see it while it
+# connects; iwd offers no other way without a D-Bus agent.
+shopt -s extglob
+
+signal_icons=('󰤯' '󰤟' '󰤢' '󰤥' '󰤨')
+scan_icon=''
+refresh_icon=''
+saved_icon='󰆓'
+back_icon='󰌍'
+disconnect_icon='󰖪'
+forget_icon='󰆴'
+enable_icon='󰤨'
+disable_icon='󰤮'
+separator='──────────────────────────────'
+
+message=''
+
+# jq definitions for the pages: markup matches the Bash function below, and rows
+# prints a list of rows followed by a separator, or nothing for an empty list.
+# shellcheck disable=SC2016 # $separator is a jq variable.
+jq_definitions='def markup: gsub("[[:cntrl:]]"; "") | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+def rows: if length > 0 then .[], "\($separator)\u0000nonselectable\u001ftrue\n" else empty end;
+'
+
+# Escape text for Pango markup, which rofi uses for rows and messages, and drop
+# control characters, which would break rofi's line-based protocol. The
+# backslashes keep Bash 5.2 from expanding & in the replacements.
+markup() {
+	local text=${1//[[:cntrl:]]/}
+	text=${text//&/\&amp;}
+	text=${text//</\&lt;}
+	text=${text//>/\&gt;}
+	printf '%s' "${text}"
+}
+
+notify() {
+	if command -v notify-send >/dev/null 2>&1; then
+		notify-send --app-name=rofi-wifi 'Wi-Fi' "$1" >/dev/null 2>&1
+	fi
+}
+
+# Call an iwd method: iwd_call PATH INTERFACE METHOD [SIGNATURE ARGUMENT...].
+# On failure, print iwd's reason on stdout.
+iwd_call() {
+	local output
+	if ! output=$(busctl --timeout=30 call net.connman.iwd "$1" "net.connman.iwd.$2" "${@:3}" 2>&1); then
+		printf '%s' "${output#Call failed: }"
+		return 1
+	fi
+}
+
+# Read every iwd object. The first station is the one used, and its device is
+# the same object. A powered-off device has no station, so then the first
+# device is used, to turn it back on.
+load_state() {
+	objects=$(busctl --json=short call net.connman.iwd / \
+		org.freedesktop.DBus.ObjectManager GetManagedObjects 2>/dev/null |
+		jq -c '.data[0]' 2>/dev/null) || objects=''
+	[[ -n ${objects} ]] || return 1
+	station=$(jq -r 'first(to_entries[] | select(.value["net.connman.iwd.Station"]) | .key) // empty' <<<"${objects}")
+	device=${station}
+	if [[ -z ${device} ]]; then
+		device=$(jq -r 'first(to_entries[] | select(.value["net.connman.iwd.Device"]) | .key) // empty' <<<"${objects}")
+	fi
+}
+
+# Print one property of an object: property PATH INTERFACE NAME.
+property() {
+	jq -r --arg path "$1" --arg interface "net.connman.iwd.$2" --arg name "$3" \
+		'.[$path][$interface][$name].data // empty' <<<"${objects}"
+}
+
+# Wait up to SECONDS for a condition to hold: wait_for SECONDS COMMAND...
+# The state is reloaded before each check.
+wait_for() {
+	local tries=$(( $1 * 5 ))
+	shift
+	while (( tries-- > 0 )); do
+		load_state
+		"$@" && return 0
+		sleep 0.2
+	done
+	return 1
+}
+
+has_station() {
+	[[ -n ${station} ]]
+}
+
+has_no_station() {
+	[[ -z ${station} ]]
+}
+
+is_not_scanning() {
+	[[ $(property "${station}" Station Scanning) != true ]]
+}
+
+# Mode options, sent before every page's rows.
+header() {
+	printf '\0no-custom\x1ftrue\n\0markup-rows\x1ftrue\n'
+	printf '\0message\x1f%s\n' "${message}"
+}
+
+# Print a row: row TEXT [INFO]. Without INFO, the row can't be chosen.
+row() {
+	if [[ -n ${2:-} ]]; then
+		printf '%s\0info\x1f%s\n' "$1" "$2"
+	else
+		printf '%s\0nonselectable\x1ftrue\n' "$1"
+	fi
+}
+
+show_unavailable() {
+	message='iwd is not running.'
+	header
+	row "${refresh_icon} Refresh" main
+}
+
+show_off() {
+	[[ -n ${message} ]] || message='Wi-Fi is off.'
+	header
+	row "${enable_icon} Enable Wi-Fi" enable
+	row "${saved_icon} Saved networks" saved
+}
+
+# Networks in range, in iwd's order of preference (connected and saved networks
+# rank above signal strength alone), each with a signal icon from its strength
+# (in hundredths of a dBm); the connected one is marked active.
+show_main() {
+	local ordered
+	if [[ -z ${station} ]]; then
+		show_off
+		return
+	fi
+	if [[ -z ${message} && $(property "${station}" Station Scanning) == true ]]; then
+		message='Scanning; choose Refresh to update the list.'
+	fi
+	ordered=$(busctl --json=short call net.connman.iwd "${station}" \
+		net.connman.iwd.Station GetOrderedNetworks 2>/dev/null |
+		jq -c '.data[0]' 2>/dev/null) || ordered='[]'
+	header
+	jq -j --argjson ordered "${ordered:-[]}" --arg separator "${separator}" "${jq_definitions}"'
+		. as $objects
+		| [$ordered[]
+		| .[0] as $path
+		| (.[1] / 100) as $dbm
+		| ($objects[$path]["net.connman.iwd.Network"] // empty)
+		| (if $dbm >= -50 then 4 elif $dbm >= -60 then 3 elif $dbm >= -67 then 2 elif $dbm >= -75 then 1 else 0 end) as $level
+		| "\($ARGS.positional[$level]) <b>\(.Name.data | markup)</b> (\(.Type.data))"
+			+ "\u0000info\u001fconnect:\($path)"
+			+ (if .Connected.data then "\u001factive\u001ftrue" else "" end)
+			+ "\n"]
+		| rows
+	' --args "${signal_icons[@]}" <<<"${objects}"
+	row "${scan_icon} Scan" scan
+	row "${refresh_icon} Refresh" main
+	row "${saved_icon} Saved networks" saved
+	row "${disable_icon} Disable Wi-Fi" disable
+}
+
+# The active connection, from iwd's diagnostics and the device's addresses.
+show_details() {
+	local network name known diagnostics address
+	network=$(property "${station}" Station ConnectedNetwork)
+	if [[ -z ${network} ]]; then
+		message='Not connected.'
+		show_main
+		return
+	fi
+	name=$(property "${network}" Network Name)
+	known=$(property "${network}" Network KnownNetwork)
+	diagnostics=$(busctl --json=short call net.connman.iwd "${station}" \
+		net.connman.iwd.StationDiagnostic GetDiagnostics 2>/dev/null |
+		jq -c '.data[0]' 2>/dev/null) || diagnostics='{}'
+	address=$(ip -j -4 address show dev "$(property "${device}" Device Name)" 2>/dev/null |
+		jq -r '[.[].addr_info[]?.local] | join(", ")' 2>/dev/null) || address=''
+
+	message="Connected to $(markup "${name}")"
+	header
+	jq -j --arg address "${address}" '
+		def detail($label; $value): "\($label)\t<b>\($value)</b>\u0000nonselectable\u001ftrue\n";
+		(if .Security then detail("Security"; .Security.data) else empty end),
+		(if .Frequency then detail("Frequency"; "\(.Frequency.data) MHz, channel \(.Channel.data // "?")") else empty end),
+		(if .RSSI then detail("Signal"; "\(.RSSI.data) dBm") else empty end),
+		(if .RxBitrate then detail("Bitrate"; "\(.RxBitrate.data / 10) Mbit/s in, \(.TxBitrate.data // 0 | . / 10) Mbit/s out") else empty end),
+		(if $address != "" then detail("Address"; $address) else empty end)
+	' <<<"${diagnostics}"
+	row "${separator}"
+	row "${disconnect_icon} Disconnect" disconnect
+	if [[ -n ${known} ]]; then
+		row "${forget_icon} Forget" "forget-ask:main:${known}"
+	fi
+	row "${back_icon} Back" main
+}
+
+# Saved networks, most recently used first. Choosing one asks to forget it.
+show_saved() {
+	local network connected='' count
+	network=$(property "${station}" Station ConnectedNetwork)
+	if [[ -n ${network} ]]; then
+		connected=$(property "${network}" Network KnownNetwork)
+	fi
+	count=$(jq '[.[] | select(.["net.connman.iwd.KnownNetwork"])] | length' <<<"${objects}")
+	if [[ -z ${message} ]]; then
+		if (( count > 0 )); then
+			message='Choose a network to forget it.'
+		else
+			message='No saved networks.'
+		fi
+	fi
+	header
+	jq -j --arg connected "${connected}" --arg separator "${separator}" "${jq_definitions}"'
+		[to_entries[] | select(.value["net.connman.iwd.KnownNetwork"])
+			| {path: .key, network: .value["net.connman.iwd.KnownNetwork"]}]
+		| sort_by(.network.LastConnectedTime.data // "") | reverse
+		| [.[]
+		| "<b>\(.network.Name.data | markup)</b> (\(.network.Type.data)), "
+			+ (if .network.LastConnectedTime then "last used \(.network.LastConnectedTime.data[0:10])" else "never used" end)
+			+ "\u0000info\u001fforget-ask:saved:\(.path)"
+			+ (if .path == $connected then "\u001factive\u001ftrue" else "" end)
+			+ "\n"]
+		| rows
+	' <<<"${objects}"
+	row "${back_icon} Back" main
+}
+
+# forget_ask RETURN PATH: confirm before forgetting; RETURN is the page to go
+# back to, main or saved.
+forget_ask() {
+	local name
+	name=$(property "$2" KnownNetwork Name)
+	if [[ -z ${name} ]]; then
+		message='That network is no longer saved.'
+		show_saved
+		return
+	fi
+	message="Forget $(markup "${name}")? Its passphrase is deleted, and it won't connect automatically."
+	header
+	row "${forget_icon} Forget" "forget:$1:$2"
+	row "${back_icon} Back" "$1"
+}
+
+# forget RETURN PATH
+forget() {
+	local name reason
+	name=$(property "$2" KnownNetwork Name)
+	if [[ -z ${name} ]]; then
+		message='That network is no longer saved.'
+	elif reason=$(iwd_call "$2" KnownNetwork Forget); then
+		message="Forgot $(markup "${name}")."
+	else
+		message="Couldn't forget $(markup "${name}"): $(markup "${reason}")"
+	fi
+	load_state
+	if [[ $1 == saved ]]; then
+		show_saved
+		return
+	fi
+	show_main
+}
+
+# Succeed if PID is a running rofi: is_rofi PID.
+is_rofi() {
+	[[ $1 =~ ^[0-9]+$ && $(cat "/proc/$1/comm" 2>/dev/null) == rofi ]]
+}
+
+# Print the PID of the rofi showing this menu. rofi isn't necessarily this
+# script's parent; it passes its PID as ROFI_OUTSIDE, and also writes it to its
+# PID file.
+menu_rofi_pid() {
+	local pid=${ROFI_OUTSIDE:-}
+	if ! is_rofi "${pid}"; then
+		pid=$(cat "${XDG_RUNTIME_DIR:-/run/user/${UID}}/rofi.pid" 2>/dev/null)
+	fi
+	if is_rofi "${pid}"; then
+		printf '%s' "${pid}"
+	fi
+}
+
+# ask_passphrase NAME TYPE INTERFACE ROFI_PID: ask for the passphrase once the
+# menu's rofi has closed, since only one rofi can run at a time. Runs in the
+# background, so it reports by notification.
+ask_passphrase() {
+	local name=$1 type=$2 interface=$3 rofi_pid=$4 tries=100 passphrase output
+	while is_rofi "${rofi_pid}"; do
+		if (( tries-- <= 0 )); then
+			notify "Couldn't ask for the passphrase: the menu didn't close."
+			return 1
+		fi
+		sleep 0.1
+	done
+	passphrase=$(rofi -dmenu -password \
+		-theme-str 'entry { placeholder: "Passphrase"; } mode-switcher { enabled: false; }' \
+		-mesg "Passphrase for $(markup "${name}")" \
+		-theme launcher.rasi </dev/null) || return 0
+	[[ -n ${passphrase} ]] || return 0
+	if output=$(iwctl --dont-ask --passphrase="${passphrase}" station "${interface}" connect "${name}" "${type}" 2>&1); then
+		notify "Connected to $(markup "${name}")"
+		return 0
+	fi
+	# iwctl colours its messages; drop the escape codes.
+	output=${output//$'\e'\[*([0-9;])m/}
+	notify "Couldn't connect to $(markup "${name}"): $(markup "${output}")"
+}
+
+# connect PATH: saved and open networks connect straight away, closing rofi on
+# success; a new network with a passphrase asks for it first.
+connect() {
+	local name type reason rofi_pid
+	name=$(property "$1" Network Name)
+	type=$(property "$1" Network Type)
+	if [[ -z ${name} ]]; then
+		message='That network is out of range.'
+		show_main
+		return
+	fi
+	if [[ $(property "$1" Network Connected) == true ]]; then
+		show_details
+		return
+	fi
+	if [[ -n $(property "$1" Network KnownNetwork) || ${type} == open ]]; then
+		if reason=$(iwd_call "$1" Network Connect); then
+			notify "Connected to $(markup "${name}")"
+			return
+		fi
+		message="Couldn't connect to $(markup "${name}"): $(markup "${reason}")"
+		load_state
+		show_main
+		return
+	fi
+	if [[ ${type} != psk ]]; then
+		message="$(markup "${name}") uses ${type}, which needs a provisioning file in /var/lib/iwd."
+		show_main
+		return
+	fi
+	rofi_pid=$(menu_rofi_pid)
+	if [[ -z ${rofi_pid} ]]; then
+		message="Couldn't ask for the passphrase: this menu's rofi wasn't found."
+		show_main
+		return
+	fi
+	ask_passphrase "${name}" "${type}" "$(property "${device}" Device Name)" "${rofi_pid}" >/dev/null 2>&1 </dev/null &
+	disown
+}
+
+disconnect() {
+	local reason
+	if reason=$(iwd_call "${station}" Station Disconnect); then
+		message='Disconnected.'
+	else
+		message="Couldn't disconnect: $(markup "${reason}")"
+	fi
+	load_state
+	show_main
+}
+
+# Scan, and wait a few seconds for the results; a longer scan shows a message.
+scan() {
+	local reason
+	if ! reason=$(iwd_call "${station}" Station Scan); then
+		message="Couldn't scan: $(markup "${reason}")"
+	else
+		wait_for 5 is_not_scanning
+	fi
+	show_main
+}
+
+# rfkill also covers the airplane-mode key; a device that iwd itself powered
+# off is powered on as well.
+enable_wifi() {
+	if ! rfkill unblock wlan; then
+		message="Couldn't unblock Wi-Fi with rfkill."
+		show_off
+		return
+	fi
+	if [[ -n ${device} && $(property "${device}" Device Powered) != true ]]; then
+		busctl set-property net.connman.iwd "${device}" net.connman.iwd.Device Powered b true 2>/dev/null
+	fi
+	if ! wait_for 5 has_station; then
+		message="Wi-Fi didn't come on."
+		show_off
+		return
+	fi
+	show_main
+}
+
+disable_wifi() {
+	if ! rfkill block wlan; then
+		message="Couldn't block Wi-Fi with rfkill."
+		show_main
+		return
+	fi
+	wait_for 5 has_no_station
+	show_main
+}
+
+# Act only on a chosen row: rofi also sends the highlighted row's info when an
+# entry is deleted (Shift+Delete), which must not, say, turn Wi-Fi off.
+action=''
+if [[ ${ROFI_RETV:-0} == 1 ]]; then
+	action=${ROFI_INFO:-}
+fi
+
+if ! load_state; then
+	show_unavailable
+	exit 0
+fi
+
+# Actions that need a station fall back to the off page without one; saved
+# networks can be forgotten either way.
+case ${action} in
+	connect:* | details | disconnect | scan)
+		if [[ -z ${station} ]]; then
+			show_off
+			exit 0
+		fi
+		;;
+	*) ;;
+esac
+
+case ${action} in
+	connect:*) connect "${action#connect:}" ;;
+	details) show_details ;;
+	disconnect) disconnect ;;
+	scan) scan ;;
+	saved) show_saved ;;
+	forget-ask:*)
+		info=${action#forget-ask:}
+		forget_ask "${info%%:*}" "${info#*:}"
+		;;
+	forget:*)
+		info=${action#forget:}
+		forget "${info%%:*}" "${info#*:}"
+		;;
+	enable) enable_wifi ;;
+	disable) disable_wifi ;;
+	*) show_main ;;
+esac

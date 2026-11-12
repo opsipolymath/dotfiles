@@ -24,6 +24,7 @@
 	selected: @nord10;
 	active: @nord15;
 	urgent: @nord12;
+	selected-active: @nord16;
 
 	background-color: transparent;
 	font: "JetBrains Mono Nerd Font 10";

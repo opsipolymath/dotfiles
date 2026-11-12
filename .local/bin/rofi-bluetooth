@@ -1,0 +1,425 @@
+#!/usr/bin/env bash
+# Bluetooth menu for rofi, using BlueZ: connect and disconnect paired devices,
+# trust or forget them, and turn Bluetooth on or off. New devices are paired in
+# bluetuith, which this menu opens.
+# Usage: rofi -show bluetooth -modes 'bluetooth:rofi-bluetooth'
+# Called by: rofi (the launcher's bluetooth mode; launcher.rasi)
+# Requires: bluez (bluetooth.service), busctl (systemd), jq, rfkill (util-linux),
+#           rofi; optionally bluetuith, kitty, notify-send (libnotify)
+#
+# rofi runs this script again for each choice, with ROFI_INFO set to the chosen
+# row's action. Device state comes from BlueZ over D-Bus. Pairing isn't offered:
+# devices that need a code confirmed need an agent that keeps running, which a
+# rofi script can't be.
+device_icons=(
+	[0]='󰂯' # Anything else
+	[1]='󰋎' # audio-headset
+	[2]='󰋋' # audio-headphones
+	[3]='󰓃' # audio-card (speakers)
+	[4]='󰍽' # input-mouse
+	[5]='󰌌' # input-keyboard
+	[6]='󰄜' # phone
+	[7]='󰌢' # computer
+)
+connect_icon='󰂱'
+disconnect_icon='󰌸'
+trust_icon='󰄬'
+untrust_icon='󰅖'
+forget_icon='󰆴'
+manage_icon='󰒓'
+pair_icon='󰐕'
+refresh_icon=''
+back_icon='󰌍'
+enable_icon='󰂯'
+disable_icon='󰂲'
+separator='──────────────────────────────'
+
+message=''
+
+# jq definitions for the pages: markup matches the Bash function below, rows
+# prints a list of rows followed by a separator, or nothing for an empty list,
+# and devices lists the paired devices, connected first, then by name.
+# shellcheck disable=SC2016 # $separator is a jq variable.
+jq_definitions='def markup: gsub("[[:cntrl:]]"; "") | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
+def rows: if length > 0 then .[], "\($separator)\u0000nonselectable\u001ftrue\n" else empty end;
+def devices: [to_entries[]
+	| select(.value["org.bluez.Device1"].Paired.data == true)
+	| {path: .key, device: .value["org.bluez.Device1"], battery: .value["org.bluez.Battery1"].Percentage.data}]
+	| sort_by((if .device.Connected.data then 0 else 1 end), (.device.Alias.data | ascii_downcase));
+def icon: {"audio-headset": 1, "audio-headphones": 2, "audio-card": 3, "input-mouse": 4,
+	"input-keyboard": 5, "phone": 6, "computer": 7}[.device.Icon.data // ""] // 0
+	| $ARGS.positional[.];
+def device_row($action): "\(icon) <b>\(.device.Alias.data | markup)</b>"
+	+ (if .battery then " \(.battery)%" else "" end)
+	+ "\u0000info\u001f\($action):\(.path)"
+	+ (if .device.Connected.data then "\u001factive\u001ftrue" else "" end)
+	+ "\n";
+'
+
+# Escape text for Pango markup, which rofi uses for rows and messages, and drop
+# control characters, which would break rofi's line-based protocol. The
+# backslashes keep Bash 5.2 from expanding & in the replacements.
+markup() {
+	local text=${1//[[:cntrl:]]/}
+	text=${text//&/\&amp;}
+	text=${text//</\&lt;}
+	text=${text//>/\&gt;}
+	printf '%s' "${text}"
+}
+
+notify() {
+	if command -v notify-send >/dev/null 2>&1; then
+		notify-send --app-name=rofi-bluetooth 'Bluetooth' "$1" >/dev/null 2>&1
+	fi
+}
+
+# Call a BlueZ method: bluez_call PATH INTERFACE METHOD [SIGNATURE ARGUMENT...].
+# On failure, print BlueZ's reason on stdout.
+bluez_call() {
+	local output
+	if ! output=$(busctl --timeout=30 call org.bluez "$1" "org.bluez.$2" "${@:3}" 2>&1); then
+		printf '%s' "${output#Call failed: }"
+		return 1
+	fi
+}
+
+# Set a property: bluez_set PATH INTERFACE NAME SIGNATURE VALUE. On failure,
+# print BlueZ's reason on stdout.
+bluez_set() {
+	local output
+	if ! output=$(busctl set-property org.bluez "$1" "org.bluez.$2" "${@:3}" 2>&1); then
+		printf '%s' "${output#Failed to set property *: }"
+		return 1
+	fi
+}
+
+# Read every BlueZ object. The first adapter is the one used.
+load_state() {
+	objects=$(busctl --json=short call org.bluez / \
+		org.freedesktop.DBus.ObjectManager GetManagedObjects 2>/dev/null |
+		jq -c '.data[0]' 2>/dev/null) || objects=''
+	[[ -n ${objects} ]] || return 1
+	adapter=$(jq -r 'first(to_entries[] | select(.value["org.bluez.Adapter1"]) | .key) // empty' <<<"${objects}")
+}
+
+# Print one property of an object: property PATH INTERFACE NAME.
+property() {
+	jq -r --arg path "$1" --arg interface "org.bluez.$2" --arg name "$3" \
+		'.[$path][$interface][$name].data // empty' <<<"${objects}"
+}
+
+# Wait up to SECONDS for a condition to hold: wait_for SECONDS COMMAND...
+# The state is reloaded before each check.
+wait_for() {
+	local tries=$(( $1 * 5 ))
+	shift
+	while (( tries-- > 0 )); do
+		load_state
+		"$@" && return 0
+		sleep 0.2
+	done
+	return 1
+}
+
+is_powered() {
+	[[ $(property "${adapter}" Adapter1 Powered) == true ]]
+}
+
+is_not_powered() {
+	! is_powered
+}
+
+# Mode options, sent before every page's rows.
+header() {
+	printf '\0no-custom\x1ftrue\n\0markup-rows\x1ftrue\n'
+	printf '\0message\x1f%s\n' "${message}"
+}
+
+# Print a row: row TEXT [INFO]. Without INFO, the row can't be chosen.
+row() {
+	if [[ -n ${2:-} ]]; then
+		printf '%s\0info\x1f%s\n' "$1" "$2"
+	else
+		printf '%s\0nonselectable\x1ftrue\n' "$1"
+	fi
+}
+
+show_unavailable() {
+	header
+	row "${refresh_icon} Refresh" main
+}
+
+show_off() {
+	local count
+	[[ -n ${message} ]] || message='Bluetooth is off.'
+	count=$(jq -r "${jq_definitions}"'devices | length' <<<"${objects}")
+	header
+	row "${enable_icon} Turn Bluetooth on" enable
+	if (( count > 0 )); then
+		row "${manage_icon} Manage devices" manage
+	fi
+}
+
+# Paired devices, connected first; choosing a disconnected one connects it, and
+# choosing a connected one opens its page. The connected ones are marked active.
+show_main() {
+	local count
+	if ! is_powered; then
+		show_off
+		return
+	fi
+	count=$(jq -r "${jq_definitions}"'devices | length' <<<"${objects}")
+	if [[ -z ${message} ]] && (( count == 0 )); then
+		message='No paired devices; pair them in bluetuith.'
+	fi
+	header
+	jq -j --arg separator "${separator}" "${jq_definitions}"'
+		[devices[] | device_row(if .device.Connected.data then "device:main" else "connect" end)] | rows
+	' --args "${device_icons[@]}" <<<"${objects}"
+	if (( count > 0 )); then
+		row "${manage_icon} Manage devices" manage
+	fi
+	if command -v bluetuith >/dev/null 2>&1; then
+		row "${pair_icon} Pair a new device in bluetuith" bluetuith
+	fi
+	row "${refresh_icon} Refresh" main
+	row "${disable_icon} Turn Bluetooth off" disable
+}
+
+# Every paired device, to open its page.
+show_manage() {
+	[[ -n ${message} ]] || message='Choose a device to manage it.'
+	header
+	jq -j --arg separator "${separator}" "${jq_definitions}"'
+		[devices[] | device_row("device:manage")] | rows
+	' --args "${device_icons[@]}" <<<"${objects}"
+	row "${back_icon} Back" main
+}
+
+# show_device RETURN PATH: its state, then the actions that apply to it. RETURN
+# is the page to go back to, main or manage.
+show_device() {
+	local name connected trusted battery
+	name=$(property "$2" Device1 Alias)
+	if [[ -z ${name} || $(property "$2" Device1 Paired) != true ]]; then
+		message='That device is no longer paired.'
+		show_main
+		return
+	fi
+	connected=$(property "$2" Device1 Connected)
+	trusted=$(property "$2" Device1 Trusted)
+	battery=$(property "$2" Battery1 Percentage)
+
+	[[ -n ${message} ]] || message=$(markup "${name}")
+	header
+	if [[ ${connected} == true ]]; then
+		row "Status	<b>Connected</b>"
+	else
+		row "Status	<b>Not connected</b>"
+	fi
+	if [[ ${trusted} == true ]]; then
+		row "Trusted	<b>Yes, connects without asking</b>"
+	else
+		row "Trusted	<b>No</b>"
+	fi
+	if [[ -n ${battery} ]]; then
+		row "Battery	<b>${battery}%</b>"
+	fi
+	row "${separator}"
+	if [[ ${connected} == true ]]; then
+		row "${disconnect_icon} Disconnect" "disconnect:$2"
+	else
+		row "${connect_icon} Connect" "connect:$2"
+	fi
+	if [[ ${trusted} == true ]]; then
+		row "${untrust_icon} Stop trusting" "untrust:$1:$2"
+	else
+		row "${trust_icon} Trust" "trust:$1:$2"
+	fi
+	row "${forget_icon} Forget" "forget-ask:$1:$2"
+	row "${back_icon} Back" "$1"
+}
+
+# connect PATH: closes rofi on success.
+connect() {
+	local name reason
+	name=$(property "$1" Device1 Alias)
+	if [[ -z ${name} ]]; then
+		message='That device is no longer paired.'
+		show_main
+		return
+	fi
+	if reason=$(bluez_call "$1" Device1 Connect); then
+		notify "Connected to $(markup "${name}")"
+		return
+	fi
+	message="Couldn't connect to $(markup "${name}"): $(markup "${reason}")"
+	load_state
+	show_main
+}
+
+# disconnect PATH
+disconnect() {
+	local name reason
+	name=$(property "$1" Device1 Alias)
+	if reason=$(bluez_call "$1" Device1 Disconnect); then
+		message="Disconnected from $(markup "${name}")."
+	else
+		message="Couldn't disconnect from $(markup "${name}"): $(markup "${reason}")"
+	fi
+	load_state
+	show_main
+}
+
+# set_trusted RETURN PATH true|false
+set_trusted() {
+	local reason
+	if ! reason=$(bluez_set "$2" Device1 Trusted b "$3"); then
+		message="Couldn't change trust: $(markup "${reason}")"
+	fi
+	load_state
+	show_device "$1" "$2"
+}
+
+# forget_ask RETURN PATH: confirm before forgetting.
+forget_ask() {
+	local name
+	name=$(property "$2" Device1 Alias)
+	if [[ -z ${name} ]]; then
+		message='That device is no longer paired.'
+		show_manage
+		return
+	fi
+	message="Forget $(markup "${name}")? It must be paired again, in bluetuith, before it can connect."
+	header
+	row "${forget_icon} Forget" "forget:$1:$2"
+	row "${back_icon} Back" "device:$1:$2"
+}
+
+# forget RETURN PATH: removed through the adapter the device belongs to.
+forget() {
+	local name owner reason
+	name=$(property "$2" Device1 Alias)
+	owner=$(property "$2" Device1 Adapter)
+	if [[ -z ${name} ]]; then
+		message='That device is no longer paired.'
+	elif reason=$(bluez_call "${owner}" Adapter1 RemoveDevice o "$2"); then
+		message="Forgot $(markup "${name}")."
+	else
+		message="Couldn't forget $(markup "${name}"): $(markup "${reason}")"
+	fi
+	load_state
+	if [[ $1 == manage ]]; then
+		show_manage
+		return
+	fi
+	show_main
+}
+
+# Open bluetuith in a kitty window of its own, and close rofi.
+open_bluetuith() {
+	if ! command -v kitty >/dev/null 2>&1; then
+		message="Can't open bluetuith: kitty is not installed."
+		show_main
+		return
+	fi
+	setsid -f kitty bluetuith >/dev/null 2>&1 </dev/null
+}
+
+# rfkill also covers the Bluetooth key; an adapter that BlueZ itself powered
+# off is powered on as well.
+enable_bluetooth() {
+	if ! rfkill unblock bluetooth; then
+		message="Couldn't unblock Bluetooth with rfkill."
+		show_off
+		return
+	fi
+	if ! wait_for 5 has_adapter; then
+		message="Bluetooth didn't come on."
+		show_off
+		return
+	fi
+	if ! is_powered; then
+		bluez_set "${adapter}" Adapter1 Powered b true >/dev/null
+	fi
+	if ! wait_for 5 is_powered; then
+		message="Bluetooth didn't come on."
+		show_off
+		return
+	fi
+	show_main
+}
+
+disable_bluetooth() {
+	if ! rfkill block bluetooth; then
+		message="Couldn't block Bluetooth with rfkill."
+		show_main
+		return
+	fi
+	wait_for 5 is_not_powered
+	show_main
+}
+
+has_adapter() {
+	[[ -n ${adapter} ]]
+}
+
+# Act only on a chosen row: rofi also sends the highlighted row's info when an
+# entry is deleted (Shift+Delete), which must not, say, turn Bluetooth off.
+action=''
+if [[ ${ROFI_RETV:-0} == 1 ]]; then
+	action=${ROFI_INFO:-}
+fi
+
+if ! load_state; then
+	message='Bluetooth is not running.'
+	show_unavailable
+	exit 0
+fi
+
+# Without an adapter, only enable can help (rfkill can hide one). Connecting
+# and disconnecting need it powered; paired devices can be managed either way.
+if [[ -z ${adapter} && ${action} != enable ]]; then
+	message='No Bluetooth adapter.'
+	show_off
+	exit 0
+fi
+case ${action} in
+	connect:* | disconnect:*)
+		if ! is_powered; then
+			show_off
+			exit 0
+		fi
+		;;
+	*) ;;
+esac
+
+case ${action} in
+	connect:*) connect "${action#connect:}" ;;
+	disconnect:*) disconnect "${action#disconnect:}" ;;
+	device:*)
+		info=${action#device:}
+		show_device "${info%%:*}" "${info#*:}"
+		;;
+	trust:*)
+		info=${action#trust:}
+		set_trusted "${info%%:*}" "${info#*:}" true
+		;;
+	untrust:*)
+		info=${action#untrust:}
+		set_trusted "${info%%:*}" "${info#*:}" false
+		;;
+	forget-ask:*)
+		info=${action#forget-ask:}
+		forget_ask "${info%%:*}" "${info#*:}"
+		;;
+	forget:*)
+		info=${action#forget:}
+		forget "${info%%:*}" "${info#*:}"
+		;;
+	manage) show_manage ;;
+	bluetuith) open_bluetuith ;;
+	enable) enable_bluetooth ;;
+	disable) disable_bluetooth ;;
+	*) show_main ;;
+esac

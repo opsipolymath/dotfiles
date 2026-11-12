@@ -38,9 +38,15 @@ super + shift + r; d
 # Open the window selection menu
 super + shift + r; c
 	rofi -show windowcd -theme launcher.rasi
-# Open the Wifi menu
+# Open the wifi menu
 super + shift + r; w
 	rofi -show wifi -theme launcher.rasi
+# Open the bluetooth menu
+super + shift + r; b
+	rofi -show bluetooth -theme launcher.rasi
+# Open the audio output menu
+super + shift + r; s
+	rofi -show audio -theme launcher.rasi
 # Open the power menu
 super + q
 	rofi-power

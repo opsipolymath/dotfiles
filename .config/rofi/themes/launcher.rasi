@@ -3,13 +3,15 @@
 @import "colors/nord.rasi"
 
 configuration {
-	modi: "drun,run,filebrowser,windowcd,wifi:iwdrofimenu";
+	modi: "drun,run,filebrowser,windowcd,wifi:rofi-wifi,bluetooth:rofi-bluetooth,audio:rofi-audio";
 	show-icons: true;
 	display-drun: "";
 	display-run: "";
 	display-filebrowser: "";
 	display-windowcd: "";
 	display-wifi: "";
+	display-bluetooth: "󰂯";
+	display-audio: "󰓃";
 	drun-display-format: "{name}";
 	window-format: "{w} · {c} · {t}";
 }
@@ -120,29 +122,32 @@ element {
 	text-color: @foreground;
 	cursor: pointer;
 }
-element normal.normal {
+element normal.normal,
+element alternate.normal {
 	background-color: inherit;
 	text-color: inherit;
 }
-element normal.urgent {
+element normal.urgent,
+element alternate.urgent {
 	background-color: @urgent;
-	text-color: @foreground;
+	text-color: @background;
 }
-element normal.active {
+element normal.active,
+element alternate.active {
 	background-color: @active;
-	text-color: @foreground;
+	text-color: @background;
 }
 element selected.normal {
 	background-color: @selected;
-	text-color: @foreground;
+	text-color: @background;
 }
 element selected.urgent {
 	background-color: @urgent;
-	text-color: @foreground;
+	text-color: @background;
 }
 element selected.active {
-	background-color: @urgent;
-	text-color: @foreground;
+	background-color: @selected-active;
+	text-color: @background;
 }
 element-icon {
 	background-color: transparent;
@@ -156,6 +161,8 @@ element-text {
 	cursor: inherit;
 	vertical-align: 0.5;
 	horizontal-align: 0.0;
+	// Lines up the detail rows (label, tab, value) of the Wi-Fi and Bluetooth tabs.
+	tab-stops: [0px, 350px];
 }
 
 textbox {
