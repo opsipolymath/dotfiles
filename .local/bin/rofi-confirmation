@@ -1,13 +1,14 @@
-#!/bin/sh
-# Yes/no confirmation dialog in rofi.
+#!/usr/bin/env bash
+# Yes/no confirmation dialog for rofi.
 # Usage: rofi-confirmation [MESSAGE]
-# Exit status: 0 if confirmed; 1 if declined, dismissed, or rofi fails.
 # Called by: rofi-power
+# Requires: rofi
+# Exit status: 0 if confirmed; 1 if declined, dismissed, or rofi fails.
 confirm_icon='󰄴'
 cancel_icon='󰅚'
 
 # -no-custom accepts only the listed icons, never typed text.
-result=$(printf '%s\n%s\n' "${confirm_icon}" "${cancel_icon}" |
+selected=$(printf '%s\n' "${confirm_icon}" "${cancel_icon}" |
 	rofi -theme-str 'textbox-prompt {str: "󰋖";}' \
 		-theme-str 'listview { columns: 2; lines: 1;}' \
 		-dmenu \
@@ -16,4 +17,4 @@ result=$(printf '%s\n%s\n' "${confirm_icon}" "${cancel_icon}" |
 		-mesg "${1:-Are you sure?}" \
 		-theme applet) || exit 1
 
-[ "${result}" = "${confirm_icon}" ]
+[[ ${selected} == "${confirm_icon}" ]]

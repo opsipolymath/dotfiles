@@ -19,11 +19,12 @@ separator='───────────────────────
 
 message=''
 
-# jq definitions for the page: markup matches the Bash function below, and rows
-# prints a list of rows followed by a separator, or nothing for an empty list.
+# jq definitions for the page: markup matches the Bash function below, and
+# rows_below prints a separator followed by a list of rows, or nothing for an
+# empty list.
 # shellcheck disable=SC2016 # $separator is a jq variable.
 jq_definitions='def markup: gsub("[[:cntrl:]]"; "") | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
-def rows: if length > 0 then .[], "\($separator)\u0000nonselectable\u001ftrue\n" else empty end;
+def rows_below: if length > 0 then "\($separator)\u0000nonselectable\u001ftrue\n", .[] else empty end;
 '
 
 # Escape text for Pango markup, which rofi uses for rows and messages, and drop
@@ -73,6 +74,7 @@ show_main() {
 		message='No audio outputs.'
 	fi
 	header
+	row "${refresh_icon} Refresh" main
 	jq -j --arg default "${default}" --arg separator "${separator}" "${jq_definitions}"'
 		[.[]
 		| (.properties["device.form_factor"] // "") as $form
@@ -88,9 +90,8 @@ show_main() {
 			+ "\u0000info\u001fsink:\(.name)"
 			+ (if .name == $default then "\u001factive\u001ftrue" else "" end)
 			+ "\n"]
-		| rows
+		| rows_below
 	' --args "${headphones_icon}" "${headset_icon}" "${speakers_icon}" "${television_icon}" <<<"${sinks}"
-	row "${refresh_icon} Refresh" main
 }
 
 # use_sink NAME: make it the default, move every playing stream to it, and close

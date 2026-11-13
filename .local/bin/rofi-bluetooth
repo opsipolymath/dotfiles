@@ -36,12 +36,13 @@ separator='───────────────────────
 
 message=''
 
-# jq definitions for the pages: markup matches the Bash function below, rows
-# prints a list of rows followed by a separator, or nothing for an empty list,
-# and devices lists the paired devices, connected first, then by name.
+# jq definitions for the pages: markup matches the Bash function below; rows
+# prints a list of rows followed by a separator, and rows_below a separator
+# followed by the list, both nothing for an empty list; and devices lists the paired devices, connected first, then by name.
 # shellcheck disable=SC2016 # $separator is a jq variable.
 jq_definitions='def markup: gsub("[[:cntrl:]]"; "") | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;");
 def rows: if length > 0 then .[], "\($separator)\u0000nonselectable\u001ftrue\n" else empty end;
+def rows_below: if length > 0 then "\($separator)\u0000nonselectable\u001ftrue\n", .[] else empty end;
 def devices: [to_entries[]
 	| select(.value["org.bluez.Device1"].Paired.data == true)
 	| {path: .key, device: .value["org.bluez.Device1"], battery: .value["org.bluez.Battery1"].Percentage.data}]
@@ -173,9 +174,6 @@ show_main() {
 		message='No paired devices; pair them in bluetuith.'
 	fi
 	header
-	jq -j --arg separator "${separator}" "${jq_definitions}"'
-		[devices[] | device_row(if .device.Connected.data then "device:main" else "connect" end)] | rows
-	' --args "${device_icons[@]}" <<<"${objects}"
 	if (( count > 0 )); then
 		row "${manage_icon} Manage devices" manage
 	fi
@@ -184,6 +182,9 @@ show_main() {
 	fi
 	row "${refresh_icon} Refresh" main
 	row "${disable_icon} Turn Bluetooth off" disable
+	jq -j --arg separator "${separator}" "${jq_definitions}"'
+		[devices[] | device_row(if .device.Connected.data then "device:main" else "connect" end)] | rows_below
+	' --args "${device_icons[@]}" <<<"${objects}"
 }
 
 # Every paired device, to open its page.
