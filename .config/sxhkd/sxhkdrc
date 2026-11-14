@@ -8,20 +8,20 @@ super + slash
 super + alt + l
 	loginctl lock-session
 # Take a screenshot
-@Print
+super + p
 	scrot "${HOME}/Downloads/Screenshot-$(date +%+4Y%m%d%H%M%S).png"
 
 # -- Applications
 # Open kitty
 super + shift + Return
 	/usr/bin/kitty
-# Open Yazi
+# Open yazi
 super + ctrl + Return
 	/usr/bin/kitty yazi
 # Open emacs
 #super + alt + Return
 #	/usr/bin/emacs
-# Open Vivaldi
+# Open vivaldi
 super + alt + Return
 	/usr/bin/vivaldi
 
