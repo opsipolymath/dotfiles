@@ -27,7 +27,7 @@ profiles:
       regular:
         family: "JetBrainsMono Nerd Font"
 
-    cursor_motion_animation_duration: 150
+    cursor_motion_animation_duration: 0
     cursor:
       shape: block
       blinking: false
@@ -70,7 +70,7 @@ color_schemes:
       blue:    '#81A1C1'
       magenta: '#B48EAD'
       cyan:    '#88C0D0'
-      white:   '#E5E9F0'
+      white:   '#E7E9F0'
     bright:
       black:   '#4C566A'
       red:     '#BF616A'
