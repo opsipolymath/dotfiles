@@ -2,8 +2,10 @@
 # Interactive settings shared by Bash and zsh; not a POSIX sh configuration.
 [[ -n ${BASH_VERSION:-}${ZSH_VERSION:-} && $- == *i* ]] || return 0
 
-# The entry points set SHELL_HOME relative to their own configuration directory
-# and have already loaded shellenv: zsh through .zshenv, Bash through .bashrc.
+# Parse environment and set home directories
+source "${HOME}/.config/shell/shellenv"
+
+# The entry points set SHELL_HOME relative to their own configuration directory.
 export SHELL_HOME="${SHELL_HOME:-${XDG_CONFIG_HOME:-${HOME}/.config}/shell}"
 
 # xinitrc runs xdg-user-dirs-update once per session; just read the result.

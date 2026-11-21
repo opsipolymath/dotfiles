@@ -12,16 +12,16 @@ super + p
 	scrot "${HOME}/Downloads/Screenshot-$(date +%+4Y%m%d%H%M%S).png"
 
 # -- Applications
-# Open kitty
+# Open terminal
 super + shift + Return
-	/usr/bin/kitty
-# Open yazi
+	/usr/bin/contour
+# Open file manager
 super + ctrl + Return
-	/usr/bin/kitty yazi
+	/usr/bin/contour yazi
 # Open emacs
 #super + alt + Return
 #	/usr/bin/emacs
-# Open vivaldi
+# Open browser
 super + alt + Return
 	/usr/bin/vivaldi
 
