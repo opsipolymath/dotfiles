@@ -27,10 +27,28 @@ tmux() {
 }
 
 # Overwrite the previous X startup log in the state directory; preserve arguments.
+# X replaces the login shell, so when X exits or crashes the console logs out
+# instead of leaving a shell open behind the X lock screen. From any other
+# shell (a nested shell, tmux), the login shell would survive X, so refuse;
+# "command startx" still starts X there, without that protection.
 startx() {
 	local log_dir="${XDG_STATE_HOME:-${HOME}/.local/state}"
+	local login_shell=false
+	if [[ -n ${BASH_VERSION:-} ]]; then
+		shopt -q login_shell && login_shell=true
+	elif [[ -o login ]]; then
+		login_shell=true
+	fi
+	if [[ ${login_shell} != true || -n ${TMUX:-} || $(tty) != /dev/tty[0-9]* ]]; then
+		error 'startx: run it from the login shell on a console'
+		return 1
+	fi
+	if [[ ! -x /usr/bin/startx ]]; then
+		error 'startx: /usr/bin/startx is not installed'
+		return 1
+	fi
 	command mkdir -p -- "${log_dir}" || return 1
-	/usr/bin/startx "$@" >"${log_dir}/startx.log" 2>&1
+	exec /usr/bin/startx "$@" >"${log_dir}/startx.log" 2>&1
 }
 
 # Start Claude in its project directory without changing the caller's directory.
