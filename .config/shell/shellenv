@@ -30,6 +30,9 @@ fi
 if [[ -n ${SSH_CONFIG:-} && -z ${GIT_SSH_COMMAND:-} ]]; then
 	export GIT_SSH_COMMAND="/usr/bin/ssh -F \"${SSH_CONFIG}\""
 fi
+if [[ -n ${CUDA_CACHE_PATH:-} && -r ${XDG_CACHE_HOME}/nvidia ]]; then
+	export CUDA_CACHE_PATH="${XDG_CACHE_HOME}/nvidia"
+fi
 
 # Bare repository holding these dotfiles; the dotfiles() function and the
 # prompt read it.
