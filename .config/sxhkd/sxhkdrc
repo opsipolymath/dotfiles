@@ -14,10 +14,10 @@ super + p
 # -- Applications
 # Open terminal
 super + shift + Return
-	/usr/bin/contour
+	/usr/bin/rio
 # Open file manager
 super + ctrl + Return
-	/usr/bin/contour yazi
+	/usr/bin/rio yazi
 # Open emacs
 #super + alt + Return
 #	/usr/bin/emacs

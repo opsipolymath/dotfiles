@@ -1,0 +1,83 @@
+# Rio config
+
+scrollback-history-limit = 10000
+enable-scroll-bar = false
+padding = [0]
+confirm-before-quit = false
+ignore-selection-foreground-color = true
+
+[window]
+# bspwm manages the window; Rio draws no frame of its own.
+decorations = "Disabled"
+opacity = 1.0
+blur = false
+
+[navigation]
+# No tab bar. Plain also turns off the tab key bindings.
+mode = "Plain"
+hide-if-single = true
+
+[fonts]
+size = 10
+
+[fonts.regular]
+family = "JetBrainsMono Nerd Font"
+
+[fonts.bold]
+family = "JetBrainsMono Nerd Font"
+weight = 700
+
+[fonts.italic]
+family = "JetBrainsMono Nerd Font"
+style = "italic"
+
+[fonts.bold-italic]
+family = "JetBrainsMono Nerd Font"
+style = "italic"
+weight = 700
+
+[cursor]
+shape = "block"
+blinking = false
+
+[scroll]
+multiplier = 3.0
+divider = 1.0
+
+[bell]
+# Visual bell only.
+audio = false
+visual = true
+
+[colors]
+background = "#2E3440"
+foreground = "#ECEFF4"
+cursor = "#D8DEE9"
+vi-cursor = "#D8DEE9"
+selection-background = "#4C566A"
+
+# Normal
+black = "#3B4252"
+red = "#BF616A"
+green = "#A3BE8C"
+yellow = "#EBCB8B"
+blue = "#81A1C1"
+magenta = "#B48EAD"
+cyan = "#88C0D0"
+white = "#E5E9F0"
+
+# Bright
+light-black = "#4C566A"
+light-red = "#BF616A"
+light-green = "#A3BE8C"
+light-yellow = "#EBCB8B"
+light-blue = "#81A1C1"
+light-magenta = "#B48EAD"
+light-cyan = "#8FBCBB"
+light-white = "#ECEFF4"
+
+[bindings]
+keys = [
+  # Shift+Return sends Escape, Return.
+  { key = "return", with = "shift", esc = "\u001b\r" },
+]
