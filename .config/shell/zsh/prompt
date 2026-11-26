@@ -10,7 +10,7 @@ source "${ZDOTDIR}/../prompt"
 
 prompt_ssh_indicator() {
 	shell_is_ssh || return 0
-	print -rn -- ' | %F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}'
+	print -rn -- "${PROMPT_SPLIT}%F{1}b%F{214}i%F{3}f%F{2}r%F{4}ö%F{6}s%F{5}t%F{blue}"
 }
 
 prompt_update() {

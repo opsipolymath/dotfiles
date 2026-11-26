@@ -21,7 +21,7 @@ prompt_ssh_indicator() {
 	local -a characters=(b i f r ö s t)
 	local -a colors=(31 '38;5;214' 33 32 34 36 35)
 
-	printf ' | '
+	printf '%s' "${PROMPT_SPLIT}"
 	for (( index = 0; index < ${#characters[@]}; index++ )); do
 		color=${colors[index]}
 		character=${characters[index]}
