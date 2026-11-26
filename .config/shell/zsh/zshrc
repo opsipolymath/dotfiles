@@ -12,19 +12,19 @@ bindkey '^L' clear-screen
 HISTFILE="${XDG_STATE_HOME:-${HOME}/.local/state}/shell/zsh_history"
 shell_prepare_history || return 1
 SAVEHIST=200000
-setopt appendhistory incappendhistory histignorealldups histignorespace
-unsetopt sharehistory
-
-shell_sync_history() {
-	fc -RI "${HISTFILE}"
-}
+# Like Bash's history -a/-n in bashrc: each command is written to HISTFILE at
+# once, and commands from other shells are read in at the next prompt.
+# sharehistory does both, so incappendhistory stays off. Don't import with
+# "fc -RI" from a hook instead: it breaks the Up/Down prefix search widgets.
+setopt appendhistory sharehistory histignorealldups histignorespace
+unsetopt incappendhistory
 
 shell_read_char() {
 	IFS= read -r -k 1 "$1"
 }
 
+# zsh/prompt registers its precmd hook with this.
 autoload -Uz add-zsh-hook
-add-zsh-hook precmd shell_sync_history
 
 source "${ZDOTDIR}/completion"
 source "${ZDOTDIR}/keybinds"
