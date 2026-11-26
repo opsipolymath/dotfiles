@@ -17,7 +17,7 @@ super + shift + Return
 	/usr/bin/rio
 # Open file manager
 super + ctrl + Return
-	/usr/bin/rio yazi
+	/usr/bin/rio -e yazi
 # Open emacs
 #super + alt + Return
 #	/usr/bin/emacs

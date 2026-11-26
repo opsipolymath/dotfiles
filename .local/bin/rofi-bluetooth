@@ -5,7 +5,7 @@
 # Usage: rofi -show bluetooth -modes 'bluetooth:rofi-bluetooth'
 # Called by: rofi (the launcher's bluetooth mode; launcher.rasi)
 # Requires: bluez (bluetooth.service), busctl (systemd), jq, rfkill (util-linux),
-#           rofi; optionally bluetuith, kitty, notify-send (libnotify)
+#           rofi; optionally bluetuith, rio, notify-send (libnotify)
 #
 # rofi runs this script again for each choice, with ROFI_INFO set to the chosen
 # row's action. Device state comes from BlueZ over D-Bus. Pairing isn't offered:
@@ -317,14 +317,14 @@ forget() {
 	show_main
 }
 
-# Open bluetuith in a kitty window of its own, and close rofi.
+# Open bluetuith in a rio window of its own, and close rofi.
 open_bluetuith() {
-	if ! command -v kitty >/dev/null 2>&1; then
-		message="Can't open bluetuith: kitty is not installed."
+	if ! command -v rio >/dev/null 2>&1; then
+		message="Can't open bluetuith: rio is not installed."
 		show_main
 		return
 	fi
-	setsid -f kitty bluetuith >/dev/null 2>&1 </dev/null
+	setsid -f rio -e bluetuith >/dev/null 2>&1 </dev/null
 }
 
 # rfkill also covers the Bluetooth key; an adapter that BlueZ itself powered
