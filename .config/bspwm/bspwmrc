@@ -68,9 +68,9 @@ start_once xsettingsd
 start_once lxpolkit
 start_once picom
 start_once sxhkd
-start_once battery-notify
-# Runs lock-screen for loginctl lock-session, the idle timeout and suspend.
-start_once xss-lock --transfer-sleep-lock -- lock-screen
+# Runs yggdrasil-desktop's lock-screen for loginctl lock-session, the idle
+# timeout and suspend.
+start_once xss-lock --transfer-sleep-lock -- /usr/lib/yggdrasil/yggdrasil-lock-screen
 if ! pgrep -u "${user_id}" -x playerctld >/dev/null 2>&1; then
 	playerctld daemon
 fi
