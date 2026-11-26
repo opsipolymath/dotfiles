@@ -69,8 +69,10 @@ while sleep "${poll_interval}"; do
 		continue
 	fi
 
-	# -m keeps kernel messages off the lock screen. physlock returns on unlock.
-	if ! sudo -n /usr/bin/physlock -m; then
+	# -m keeps kernel messages off the lock screen, and -s disables SysRq while
+	# locked, since SysRq+K (Secure Attention Key) would kill physlock. physlock
+	# returns on unlock. The sudo rule must allow these exact arguments.
+	if ! sudo -n /usr/bin/physlock -m -s; then
 		printf 'ERROR: physlock failed to lock the consoles\n' >&2
 	fi
 	printf -v last_activity '%(%s)T' -1

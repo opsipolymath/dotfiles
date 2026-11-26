@@ -27,19 +27,24 @@ tmux() {
 }
 
 # Overwrite the previous X startup log in the state directory; preserve arguments.
-# X replaces the login shell, so when X exits or crashes the console logs out
-# instead of leaving a shell open behind the X lock screen. From any other
-# shell (a nested shell, tmux), the login shell would survive X, so refuse;
-# "command startx" still starts X there, without that protection.
+# Once X has started, the console logs out when X exits or is killed, instead of
+# leaving a shell open behind the X lock screen. If X fails to start, the shell
+# stays, with an error. xinitrc creates the file named in STARTX_STARTED_FILE,
+# which tells the two apart. Until then, the shell ignores Ctrl+C and Ctrl+\, so
+# nothing typed when X dies can interrupt the logout (interactive shells ignore
+# Ctrl+Z already). From any other shell (a nested shell, tmux), the login shell
+# would survive X, so refuse; "command startx" still starts X there, without
+# that protection.
 startx() {
 	local log_dir="${XDG_STATE_HOME:-${HOME}/.local/state}"
-	local login_shell=false
+	local login_shell=false console started_file
 	if [[ -n ${BASH_VERSION:-} ]]; then
 		shopt -q login_shell && login_shell=true
 	elif [[ -o login ]]; then
 		login_shell=true
 	fi
-	if [[ ${login_shell} != true || -n ${TMUX:-} || $(tty) != /dev/tty[0-9]* ]]; then
+	console=$(tty)
+	if [[ ${login_shell} != true || -n ${TMUX:-} || ${console} != /dev/tty[0-9]* ]]; then
 		error 'startx: run it from the login shell on a console'
 		return 1
 	fi
@@ -48,7 +53,26 @@ startx() {
 		return 1
 	fi
 	command mkdir -p -- "${log_dir}" || return 1
-	exec /usr/bin/startx "$@" >"${log_dir}/startx.log" 2>&1
+	started_file="${XDG_RUNTIME_DIR:-${log_dir}}/startx-${console#/dev/}.started"
+	command rm -f -- "${started_file:?}"
+
+	trap '' INT QUIT
+	STARTX_STARTED_FILE=${started_file} /usr/bin/startx "$@" >"${log_dir}/startx.log" 2>&1
+	if [[ -e ${started_file} ]]; then
+		command rm -f -- "${started_file:?}"
+		# exit refuses while jobs are stopped, and the shell must not outlive X.
+		# zsh refuses only with check_jobs, and leaves the function when it does;
+		# Bash refuses regardless, and carries on to the kill.
+		if [[ -n ${ZSH_VERSION:-} ]]; then
+			unsetopt check_jobs
+		fi
+		exit
+		# shellcheck disable=SC2317 # reached when Bash's exit refuses
+		kill -KILL "$$"
+	fi
+	trap - INT QUIT
+	error "startx: X didn't start; see ${log_dir}/startx.log"
+	return 1
 }
 
 # Start Claude in its project directory without changing the caller's directory.

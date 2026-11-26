@@ -4,6 +4,13 @@
 
 x11_config_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/X11"
 
+# Tell the startx shell function that X started: from now on, the console logs
+# out when X ends, instead of returning to the shell.
+if [ -n "${STARTX_STARTED_FILE:-}" ]; then
+	: >"${STARTX_STARTED_FILE}"
+	unset STARTX_STARTED_FILE
+fi
+
 # Load any global configurations
 global_xinit_dir=/etc/X11/xinit/xinitrc.d
 if [ -d "${global_xinit_dir}" ]; then
