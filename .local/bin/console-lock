@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Lock every console with physlock once the active text console has had no
+# keyboard input for a while. Sessions keep running behind the lock.
+# Called by: console-lock.service (systemd user unit)
+# Requires: physlock, and the sudo rule in /etc/sudoers.d/physlock;
+#           optionally xset, to keep X awake while a console is in use
+#
+# The kernel updates a tty's access time when a program reads input from it,
+# so its age is the time since the last keypress there; output doesn't count.
+# The VT that X runs on is left to xss-lock, and a console showing a login
+# prompt (owned by root, not this user) has nothing to lock.
+
+idle_limit=${CONSOLE_LOCK_IDLE:-600} # seconds; X's default screensaver timeout
+poll_interval=10
+
+# Only the active VT is checked, so typing on one console is enough; others
+# can sit idle. Switching to a console counts as activity there, or one left
+# idle for longer than the limit would lock before the first keypress. The
+# same goes for unlocking: the password is typed on physlock's own VT, so the
+# console's access time is still old when the lock ends.
+previous_tty=
+last_activity=0
+
+# Count console activity as activity in X too, so X doesn't lock while a
+# console is in use. startx exports DISPLAY (and XAUTHORITY, when set) to the
+# user manager through xinitrc.d/50-systemd-user.sh after this service has
+# started, so read them from the manager each time.
+reset_x_idle() {
+	local name value display='' xauthority=''
+	command -v xset >/dev/null 2>&1 || return 0
+	pgrep -x Xorg >/dev/null || return 0
+	while IFS='=' read -r name value; do
+		case ${name} in
+			DISPLAY) display=${value} ;;
+			XAUTHORITY) xauthority=${value} ;;
+			*) ;;
+		esac
+	done < <(systemctl --user show-environment)
+	[[ -n ${display} ]] || return 0
+	DISPLAY=${display} XAUTHORITY=${xauthority:-${HOME}/.Xauthority} xset s reset 2>/dev/null
+}
+
+# True when an X server runs on the given VT (Xorg is started with "vtN").
+x_runs_on() {
+	local vt=$1 command_line
+	while read -r _ command_line; do
+		[[ " ${command_line} " == *" ${vt} "* ]] && return 0
+	done < <(pgrep -a -x Xorg)
+	return 1
+}
+
+while sleep "${poll_interval}"; do
+	read -r active_tty </sys/class/tty/tty0/active || continue
+	[[ ${active_tty} == tty[0-9]* ]] || continue
+	if [[ ${active_tty} != "${previous_tty}" ]]; then
+		previous_tty=${active_tty}
+		printf -v last_activity '%(%s)T' -1
+		continue
+	fi
+	pgrep -x physlock >/dev/null && continue
+	x_runs_on "vt${active_tty#tty}" && continue
+	[[ $(stat -c %U "/dev/${active_tty}" 2>/dev/null) == "${USER}" ]] || continue
+
+	last_input=$(stat -c %X "/dev/${active_tty}") || continue
+	(( last_activity > last_input )) && last_input=${last_activity}
+	printf -v now '%(%s)T' -1
+	if (( now - last_input < idle_limit )); then
+		reset_x_idle
+		continue
+	fi
+
+	# -m keeps kernel messages off the lock screen. physlock returns on unlock.
+	if ! sudo -n /usr/bin/physlock -m; then
+		printf 'ERROR: physlock failed to lock the consoles\n' >&2
+	fi
+	printf -v last_activity '%(%s)T' -1
+done

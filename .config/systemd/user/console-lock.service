@@ -1,0 +1,12 @@
+[Unit]
+Description=Lock the consoles with physlock when idle
+ConditionPathExists=/usr/bin/physlock
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/console-lock
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

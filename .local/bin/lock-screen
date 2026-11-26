@@ -65,8 +65,50 @@ resume_notifications() {
 	fi
 }
 
+# Keep Ctrl+Alt+Fn from reaching the consoles while X is locked. physlock -l
+# and -L only switch VT switching off and on, through the sudo rule in
+# /etc/sudoers.d/physlock. Without them the screen still locks, with the
+# consoles reachable, so warn rather than fail.
+#
+# When X locks while a console is on screen, switching stays enabled, or that
+# console would be trapped in front; console-lock guards it instead. It is
+# disabled as soon as X's VT comes back, while i3lock still holds the screen.
+vt_switching=open # open, locked, or failed
+lock_vt_switching() {
+	[[ ${vt_switching} == open ]] || return 0
+	command -v physlock >/dev/null 2>&1 || return 0
+	if sudo -n /usr/bin/physlock -l; then
+		vt_switching=locked
+	else
+		vt_switching=failed
+		printf 'WARNING: Could not disable VT switching; the consoles stay reachable\n' >&2
+	fi
+}
+# shellcheck disable=SC2329 # invoked by the EXIT trap
+unlock_vt_switching() {
+	if [[ ${vt_switching} == locked ]]; then
+		sudo -n /usr/bin/physlock -L
+	fi
+}
+# True while X's VT is on screen. X runs on the login VT (see xserverrc); if
+# that is unknown, assume X is in front.
+x_vt_active() {
+	local active_tty
+	[[ ${XDG_VTNR:-} == [0-9]* ]] || return 0
+	read -r active_tty </sys/class/tty/tty0/active || return 0
+	[[ ${active_tty} == "tty${XDG_VTNR}" ]]
+}
+guard_vt_switching() {
+	if x_vt_active; then
+		lock_vt_switching
+	fi
+}
+
 pause_notifications
-trap 'pkill -xu "${EUID}" i3lock' TERM INT
+guard_vt_switching
+# Every exit from here re-enables VT switching, including after X dies (HUP).
+trap unlock_vt_switching EXIT
+trap 'pkill -xu "${EUID}" i3lock' TERM INT HUP
 
 if [[ -e /dev/fd/${XSS_SLEEP_LOCK_FD:--1} ]]; then
 	# Locking for a suspend: i3lock forks once the screen is locked, without a
@@ -80,6 +122,7 @@ if [[ -e /dev/fd/${XSS_SLEEP_LOCK_FD:--1} ]]; then
 		exit "${status}"
 	fi
 	while pkill -0 -xu "${EUID}" i3lock; do
+		guard_vt_switching
 		sleep 0.5
 	done
 	resume_notifications
@@ -88,6 +131,10 @@ fi
 
 i3lock --nofork "${i3lock_options[@]}" &
 locker_pid=$!
+while kill -0 "${locker_pid}" 2>/dev/null; do
+	guard_vt_switching
+	sleep 0.5
+done
 wait "${locker_pid}"
 status=$?
 resume_notifications
